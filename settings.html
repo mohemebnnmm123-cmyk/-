@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Nexus AI PRO - الإعدادات</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #010108; --surface: rgba(10,12,25,0.90); --primary: #00d4ff;
+      --border: rgba(0,212,255,0.18); --text: #e8f4f8; --text-muted: #7a9aaa;
+      --success: #00e676; --error: #ff5252; --warn: #fbbf24;
+    }
+    html, body { width: 100%; min-height: 100vh; background: var(--bg); color: var(--text); font-family: 'Cairo', sans-serif; }
+    canvas#bg { position: fixed; inset: 0; z-index: 0; }
+    .page { position: relative; z-index: 10; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px 16px 80px; }
+
+    /* COPY PROTECTION */
+    body { -webkit-user-select: none; -moz-user-select: none; user-select: none; }
+    input, textarea { -webkit-user-select: text; -moz-user-select: text; user-select: text; }
+
+    /* TOPBAR */
+    .topbar { width: 100%; max-width: 700px; display: flex; align-items: center; justify-content: space-between; padding: 10px 0; margin-bottom: 24px; }
+    .back-btn { display: flex; align-items: center; gap: 8px; background: rgba(0,212,255,0.06); border: 1px solid var(--border); color: var(--text-muted); padding: 9px 16px; border-radius: 10px; cursor: pointer; font-family: 'Cairo', sans-serif; font-size: 13px; font-weight: 600; transition: 0.25s; }
+    .back-btn:hover { background: rgba(0,212,255,0.12); color: var(--text); }
+    .topbar-logo { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 900; color: var(--primary); cursor: pointer; user-select: none; }
+    .topbar-logo svg { flex-shrink: 0; }
+
+    /* CARDS */
+    .card { background: var(--surface); backdrop-filter: blur(25px); border: 1px solid var(--border); border-radius: 22px; padding: 32px 28px; width: 100%; max-width: 700px; margin-bottom: 20px; }
+    .card-title { font-size: 19px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+    .card-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 26px; line-height: 1.7; }
+
+    .provider-badge { font-size: 10px; padding: 2px 8px; border-radius: 6px; font-weight: 700; }
+    .pb-dev { background: rgba(245,158,11,.15); color: #fbbf24; border: 1px solid rgba(245,158,11,.3); }
+
+    .save-btn { width: 100%; margin-top: 24px; padding: 15px; background: linear-gradient(135deg, #005566, #00d4ff); border: none; border-radius: 14px; color: #fff; font-family: 'Cairo', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.25s; }
+    .save-btn:hover { transform: translateY(-2px); box-shadow: 0 0 32px rgba(0,212,255,0.4); }
+    .save-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .save-btn.dev-save { background: linear-gradient(135deg, #5c3300, #fbbf24); box-shadow: 0 0 20px rgba(245,158,11,0.2); }
+    .save-btn.dev-save:hover { box-shadow: 0 0 32px rgba(245,158,11,0.4); }
+
+    .divider { height: 1px; background: var(--border); margin: 22px 0; }
+
+    /* STATUS */
+    .status-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+    .status-chip { display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; border: 1px solid; }
+    .status-chip.ok    { background: rgba(0,230,118,0.1); color: #00e676; border-color: rgba(0,230,118,0.3); }
+    .status-chip.miss  { background: rgba(255,82,82,0.1);  color: #ff5252; border-color: rgba(255,82,82,0.3); }
+    .status-chip.warn  { background: rgba(245,158,11,0.1); color: #fbbf24; border-color: rgba(245,158,11,0.3); }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+    /* TOGGLE */
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; }
+    .toggle-label { font-size: 14px; font-weight: 600; }
+    .toggle-label small { display: block; font-size: 11px; color: var(--text-muted); font-weight: 400; margin-top: 2px; }
+    .switch { position: relative; width: 52px; height: 28px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; inset: 0; background: #333; border-radius: 28px; cursor: pointer; transition: 0.3s; }
+    .slider::before { content: ''; position: absolute; height: 20px; width: 20px; left: 4px; bottom: 4px; background: #fff; border-radius: 50%; transition: 0.3s; }
+    input:checked + .slider { background: var(--success); }
+    input:checked + .slider::before { transform: translateX(24px); }
+
+    /* TOAST */
+    .toast { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); padding: 12px 24px; border-radius: 14px; font-size: 14px; font-weight: 600; display: none; z-index: 9999; animation: slideDown 0.35s ease; }
+    .toast.success { background: rgba(0,230,118,0.15); border: 1px solid rgba(0,230,118,0.4); color: var(--success); }
+    .toast.error   { background: rgba(255,82,82,0.15);  border: 1px solid rgba(255,82,82,0.4);  color: var(--error); }
+    .toast.warn    { background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); color: var(--warn); }
+    @keyframes slideDown { from { top: -50px; opacity: 0; } to { top: 24px; opacity: 1; } }
+
+    /* DEV PANEL MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(10px); }
+    .modal-overlay.open { display: flex; }
+    .modal-box { background: rgba(8,5,0,0.99); border: 2px solid rgba(245,158,11,0.55); border-radius: 24px; padding: 32px 28px; width: 100%; max-width: 680px; max-height: 92vh; overflow-y: auto; }
+    .modal-box::-webkit-scrollbar { width: 4px; }
+    .modal-box::-webkit-scrollbar-thumb { background: rgba(245,158,11,0.3); border-radius: 4px; }
+    .modal-close { position: absolute; top: 16px; left: 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #888; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 18px; transition: 0.2s; }
+    .modal-close:hover { background: rgba(255,82,82,0.15); color: #ff5252; }
+    .modal-title { font-size: 20px; font-weight: 900; color: #fbbf24; margin-bottom: 6px; text-align: center; }
+    .modal-sub { font-size: 13px; color: #8a7a60; margin-bottom: 28px; text-align: center; }
+
+    /* CODE SCREEN */
+    .code-screen { text-align: center; }
+    .code-screen .lock-icon { font-size: 52px; margin-bottom: 16px; display: block; filter: drop-shadow(0 0 16px rgba(245,158,11,0.5)); animation: pulse-glow 2s ease-in-out infinite; }
+    @keyframes pulse-glow { 0%,100% { filter: drop-shadow(0 0 16px rgba(245,158,11,0.4)); } 50% { filter: drop-shadow(0 0 28px rgba(245,158,11,0.8)); } }
+    .code-input { width: 100%; background: rgba(0,0,0,0.55); color: #fff; border: 2px solid rgba(245,158,11,0.35); border-radius: 14px; padding: 14px 18px; font-family: monospace; font-size: 17px; outline: none; transition: 0.2s; }
+    .code-input:focus { border-color: rgba(245,158,11,0.75); box-shadow: 0 0 24px rgba(245,158,11,0.12); }
+    .code-input.error-shake { animation: shake 0.4s ease; border-color: rgba(255,82,82,0.7); }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }
+    .code-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #5c3300, #fbbf24); border: none; border-radius: 14px; color: #fff; font-family: 'Cairo', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 14px; transition: 0.25s; }
+    .code-btn:hover { box-shadow: 0 0 28px rgba(245,158,11,0.45); }
+    .code-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .code-hint { font-size: 11px; color: #5a4a30; margin-top: 12px; }
+    .code-warning { font-size: 11px; color: rgba(255,82,82,0.7); margin-top: 8px; }
+
+    /* DEV CONTENT */
+    .dev-content { display: none; }
+    .dev-content.unlocked { display: block; }
+
+    .form-group { margin-bottom: 18px; }
+    .form-label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 7px; }
+    .input-row { display: flex; gap: 8px; }
+    .key-input { flex: 1; background: rgba(0,0,0,0.4); color: #fbbf24; border: 1.5px solid rgba(245,158,11,0.2); border-radius: 12px; padding: 11px 16px; font-family: monospace; font-size: 13px; outline: none; transition: 0.2s; }
+    .key-input:focus { border-color: rgba(245,158,11,0.55); box-shadow: 0 0 0 3px rgba(245,158,11,0.07); }
+    .key-input::placeholder { color: #3a2a10; }
+    .toggle-btn { background: rgba(255,255,255,0.05); border: 1.5px solid rgba(255,255,255,0.1); color: var(--text-muted); padding: 11px 14px; border-radius: 12px; cursor: pointer; transition: 0.2s; }
+    .toggle-btn:hover { background: rgba(255,255,255,0.1); }
+
+    .usage-info { background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.15); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; }
+    .usage-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 6px; }
+    .usage-row:last-child { margin-bottom: 0; }
+    .usage-key { color: #8a7a60; }
+    .usage-val { color: #fbbf24; font-weight: 700; font-family: monospace; }
+
+    .dev-section-title { font-size: 14px; font-weight: 700; color: #fbbf24; margin: 20px 0 10px; display: flex; align-items: center; gap: 8px; }
+    .dev-badge { font-size: 10px; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #fbbf24; padding: 2px 8px; border-radius: 6px; }
+
+    .dev-btn-card { background: rgba(245,158,11,0.05); border: 1px solid rgba(245,158,11,0.2); border-radius: 18px; padding: 20px 24px; width: 100%; max-width: 700px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+    .dev-btn-label { font-size: 15px; font-weight: 700; color: #fbbf24; }
+    .dev-btn-label small { display: block; font-size: 11px; color: #8a7a60; font-weight: 400; margin-top: 3px; }
+    .open-dev-btn { background: linear-gradient(135deg, #5c3300, #fbbf24); border: none; border-radius: 12px; color: #fff; font-family: 'Cairo', sans-serif; font-size: 13px; font-weight: 700; padding: 11px 18px; cursor: pointer; transition: 0.25s; }
+    .open-dev-btn:hover { box-shadow: 0 0 24px rgba(245,158,11,0.4); transform: translateY(-1px); }
+    .dev-unlocked-indicator { display: none; font-size: 11px; color: #00e676; font-weight: 700; padding: 4px 10px; background: rgba(0,230,118,0.1); border: 1px solid rgba(0,230,118,0.3); border-radius: 8px; }
+
+    .hint { font-size: 11px; color: #3a5060; margin-top: 5px; }
+
+    /* AI PRO SECTION */
+    .ai-pro-section { background: linear-gradient(135deg, rgba(139,69,19,0.2), rgba(184,115,51,0.15)); border: 1.5px solid rgba(184,115,51,0.3); border-radius: 18px; padding: 24px 20px; margin: 20px 0; }
+    .ai-pro-title { font-size: 16px; font-weight: 900; color: #d4a574; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+    .ai-pro-desc { font-size: 12px; color: #a89968; margin-bottom: 16px; line-height: 1.6; }
+    .ai-models-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .model-chip { background: rgba(0,0,0,0.3); border: 1px solid rgba(184,115,51,0.2); border-radius: 10px; padding: 8px 12px; font-size: 11px; color: #d4a574; text-align: center; font-weight: 600; }
+    .daily-limits { background: rgba(0,0,0,0.2); border-left: 3px solid #d4a574; border-radius: 6px; padding: 12px 14px; }
+    .limit-row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 6px; color: #b8a068; }
+    .limit-row:last-child { margin-bottom: 0; }
+    .limit-value { color: #d4a574; font-weight: 700; font-family: monospace; }
+
+    @media (max-width: 600px) {
+      .card { padding: 24px 18px; }
+      .modal-box { padding: 24px 18px; }
+      .dev-btn-card { flex-direction: column; align-items: flex-start; }
+      .ai-models-grid { grid-template-columns: 1fr; }
+    }
+    /* الذكاء الاصطناعي الدفاعي */
+    .defense-panel { background: rgba(0,212,255,0.04); border: 1px solid rgba(0,212,255,0.18); border-radius: 14px; padding: 16px; }
+    .defense-panel.hidden-mode { opacity: 0.45; }
+    .defense-status { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #b8f0d0; margin-bottom: 14px; }
+    .defense-dot { width: 11px; height: 11px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 10px #22c55e; animation: pulseDot 1.8s infinite; }
+    .defense-dot.threat { background: #ef4444; box-shadow: 0 0 12px #ef4444; }
+    @keyframes pulseDot { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .defense-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 12px; }
+    .defense-stat { background: rgba(0,0,0,0.25); border-radius: 10px; padding: 10px; text-align: center; }
+    .defense-stat span { display: block; font-size: 20px; font-weight: 700; color: #00d4ff; }
+    .defense-stat small { font-size: 11px; color: #8aa; }
+    .defense-log { max-height: 140px; overflow-y: auto; font-size: 12px; line-height: 1.7; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px; color: #9fb; font-family: monospace; }
+    .defense-log .threat-line { color: #fca5a5; }
+    .defense-log .ok-line { color: #86efac; }
+    .defense-toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #9ab; margin-top: 12px; cursor: pointer; }
+
+    /* ─── CHAT ADMIN CARD ─── */
+    .chat-btn-card { background: rgba(0,212,255,0.05); border: 1px solid rgba(0,212,255,0.2); border-radius: 18px; padding: 20px 24px; width: 100%; max-width: 700px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+    .chat-btn-label { font-size: 15px; font-weight: 700; color: #22d3ee; }
+    .chat-btn-label small { display: block; font-size: 11px; color: #3a6a7a; font-weight: 400; margin-top: 3px; }
+    .open-chat-btn { background: linear-gradient(135deg, #003344, #00d4ff); border: none; border-radius: 12px; color: #fff; font-family: 'Cairo', sans-serif; font-size: 13px; font-weight: 700; padding: 11px 18px; cursor: pointer; transition: 0.25s; }
+    .open-chat-btn:hover { box-shadow: 0 0 24px rgba(0,212,255,0.5); transform: translateY(-1px); }
+    .chat-unlocked-indicator { display: none; font-size: 11px; color: #00e676; font-weight: 700; padding: 4px 10px; background: rgba(0,230,118,0.1); border: 1px solid rgba(0,230,118,0.3); border-radius: 8px; }
+
+    /* ─── CHAT ADMIN MODAL ─── */
+    .chat-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 1100; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(12px); }
+    .chat-modal-overlay.open { display: flex; }
+    .chat-modal-box { background: rgba(0,10,22,0.99); border: 2px solid rgba(0,212,255,0.45); border-radius: 24px; padding: 32px 28px; width: 100%; max-width: 700px; max-height: 92vh; overflow-y: auto; position: relative; }
+    .chat-modal-box::-webkit-scrollbar { width: 4px; }
+    .chat-modal-box::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.3); border-radius: 4px; }
+    .chat-modal-close { position: absolute; top: 16px; left: 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #888; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 18px; transition: 0.2s; }
+    .chat-modal-close:hover { background: rgba(255,82,82,0.15); color: #ff5252; }
+    .chat-modal-title { font-size: 20px; font-weight: 900; color: #00d4ff; margin-bottom: 6px; text-align: center; }
+    .chat-modal-sub { font-size: 13px; color: #4a7a8a; margin-bottom: 28px; text-align: center; }
+    .chat-section-title { font-size: 14px; font-weight: 700; color: #00d4ff; margin: 22px 0 10px; display: flex; align-items: center; gap: 8px; }
+    .chat-text-input { width: 100%; background: rgba(0,0,0,0.45); color: #e8f4f8; border: 1.5px solid rgba(0,212,255,0.2); border-radius: 12px; padding: 11px 16px; font-family: 'Cairo', sans-serif; font-size: 13px; outline: none; transition: 0.2s; }
+    .chat-text-input:focus { border-color: rgba(0,212,255,0.55); box-shadow: 0 0 0 3px rgba(0,212,255,0.07); }
+    .chat-text-input::placeholder { color: #2a4a5a; }
+    textarea.chat-text-input { resize: vertical; min-height: 90px; line-height: 1.7; }
+    .chat-add-btn { background: linear-gradient(135deg, #003344, #00d4ff); border: none; border-radius: 10px; color: #fff; font-family: 'Cairo', sans-serif; font-size: 13px; font-weight: 700; padding: 11px 16px; cursor: pointer; white-space: nowrap; transition: 0.25s; }
+    .chat-add-btn:hover { box-shadow: 0 0 18px rgba(0,212,255,0.4); }
+    .chat-save-btn { width: 100%; margin-top: 24px; padding: 15px; background: linear-gradient(135deg, #003344, #00d4ff); border: none; border-radius: 14px; color: #fff; font-family: 'Cairo', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.25s; }
+    .chat-save-btn:hover { transform: translateY(-2px); box-shadow: 0 0 32px rgba(0,212,255,0.4); }
+    .models-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; min-height: 40px; background: rgba(0,0,0,0.25); border-radius: 10px; padding: 10px; border: 1px solid rgba(0,212,255,0.1); }
+    .model-item { display: inline-flex; align-items: center; gap: 6px; background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.25); border-radius: 8px; padding: 5px 12px; font-size: 12px; color: #00d4ff; font-weight: 700; }
+    .model-item-del { background: none; border: none; color: rgba(255,82,82,0.7); cursor: pointer; font-size: 13px; line-height: 1; padding: 0 2px; transition: 0.2s; }
+    .model-item-del:hover { color: #ff5252; }
+    .strict-toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(0,212,255,0.07); }
+    .strict-toggle-row:last-child { border-bottom: none; }
+    .strict-toggle-label { font-size: 13px; font-weight: 600; color: #b8d8e8; }
+    .strict-toggle-label small { display: block; font-size: 11px; color: #4a7a8a; font-weight: 400; margin-top: 2px; }
+    .strict-switch { position: relative; width: 46px; height: 26px; flex-shrink: 0; }
+    .strict-switch input { opacity: 0; width: 0; height: 0; }
+    .strict-slider { position: absolute; inset: 0; background: #222; border-radius: 26px; cursor: pointer; transition: 0.3s; border: 1px solid rgba(0,212,255,0.15); }
+    .strict-slider::before { content: ''; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: #555; border-radius: 50%; transition: 0.3s; }
+    .strict-switch input:checked + .strict-slider { background: rgba(0,212,255,0.25); border-color: rgba(0,212,255,0.5); }
+    .strict-switch input:checked + .strict-slider::before { transform: translateX(20px); background: #00d4ff; box-shadow: 0 0 8px rgba(0,212,255,0.6); }
+    @media (max-width: 600px) { .chat-btn-card { flex-direction: column; align-items: flex-start; gap: 10px; } .chat-modal-box { padding: 24px 16px; } }
+  </style>
+</head>
+<body>
+  <canvas id="bg"></canvas>
+  <div id="toast" class="toast"></div>
+
+  <!-- DEV PANEL MODAL -->
+  <div class="modal-overlay" id="devModal">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeDevModal()">✕</button>
+
+      <!-- Code Input Screen -->
+      <div class="code-screen" id="codeScreen">
+        <span class="lock-icon">🔐</span>
+        <div class="modal-title">لوحة المطور السرية</div>
+        <div class="modal-sub">أدخل الرمز السري للوصول — الرمز صالح مرة واحدة فقط</div>
+        <input type="password" class="code-input" id="codeInput" placeholder="أدخل الرمز السري..." maxlength="64" autocomplete="off" onkeydown="if(event.key==='Enter')submitCode()">
+        <button class="code-btn" id="codeBtn" onclick="submitCode()">🔓 دخول</button>
+        <div class="code-hint">الرمز سري ومخصص للمطور فقط — يُستخدم مرة واحدة ثم يُتلف</div>
+        <div class="code-warning" id="codeWarning"></div>
+      </div>
+
+      <!-- Dev Content -->
+      <div class="dev-content" id="devContent">
+        <div class="modal-title">⚙️ لوحة المطور المتقدمة</div>
+        <div class="modal-sub">إدارة مفاتيح API وذكاء اصطناعي متقدم خاص بالمطور فقط</div>
+
+        <!-- 🤖 AI Developer Pro Section -->
+        <div class="ai-pro-section">
+          <div class="ai-pro-title">🤖 ذكاء اصطناعي متقدم للمطور</div>
+          <div class="ai-pro-desc">نموذج ذكاء اصطناعي متقدم حصري للمطورين — صلاحيات كاملة (إضافة، حذف، تعديل، تغيير) — خاص تماماً ولا تراه الشركات</div>
+          
+          <div style="margin-bottom: 14px;">
+            <div style="font-size: 12px; color: #d4a574; font-weight: 700; margin-bottom: 8px;">🧠 النماذج المستخدمة:</div>
+            <div class="ai-models-grid">
+              <div class="model-chip">🤖 Claude 4.6</div>
+              <div class="model-chip">💬 ChatGPT 3.5</div>
+              <div class="model-chip">🔵 ChatGPT 4.0</div>
+              <div class="model-chip">🟣 ChatGPT 5.3</div>
+              <div class="model-chip">⭐ ChatGPT 5.4</div>
+              <div class="model-chip">🌐 Gemini Pro</div>
+              <div class="model-chip">📷 Gemini Vision</div>
+              <div class="model-chip">🔄 OpenRouter #1</div>
+              <div class="model-chip">🔄 OpenRouter #2</div>
+              <div class="model-chip">🧠 K2.6 Thinking</div>
+              <div class="model-chip">🔥 هايبر 1</div>
+              <div class="model-chip">💎 هايبر 1.5</div>
+              <div class="model-chip">👑 هايبر 1 برو</div>
+              <div class="model-chip">✨ هايبر 1.5 برو</div>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 14px;">
+            <div style="font-size: 12px; color: #d4a574; font-weight: 700; margin-bottom: 8px;">🎯 المميزات:</div>
+            <ul style="font-size: 11px; color: #b8a068; list-style: none; padding-right: 0;">
+              <li>✅ صلاحيات كاملة (CRUD كامل)</li>
+              <li>✅ مكالمات صوتية مدمجة</li>
+              <li>✅ أد��ات عملاقة احترافية</li>
+              <li>✅ Claude 4.6 يصحح الأخطاء تطويراً جذرياً</li>
+              <li>✅ خاص بالمطور فقط — ل���� ترى الشركات</li>
+            </ul>
+          </div>
+
+          <div class="daily-limits">
+            <div style="font-size: 12px; color: #d4a574; font-weight: 700; margin-bottom: 8px;">📊 حدود التوكنات اليومية (مجاني):</div>
+            <div class="limit-row">
+              <span>🔥 هايبر 1</span>
+              <span class="limit-value">75K توكن/يوم</span>
+            </div>
+            <div class="limit-row">
+              <span>💎 هايبر 1.5</span>
+              <span class="limit-value">60K توكن/يوم</span>
+            </div>
+            <div class="limit-row">
+              <span>👑 هايبر 1 برو</span>
+              <span class="limit-value">35K توكن/يوم</span>
+            </div>
+            <div class="limit-row">
+              <span>✨ هايبر 1.5 برو</span>
+              <span class="limit-value">40K توكن/يوم</span>
+            </div>
+            <div class="limit-row">
+              <span>⭐ هايبر 3.5 برو</span>
+              <span class="limit-value">5K توكن/يوم</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="dev-section-title">🔑 خانة المفاتيح السرية</div>
+
+        
+        <!-- ===== عرض النماذج داخل كل هايبر ===== -->
+        <div class="divider"></div>
+        <div class="dev-section-title">🧩 النماذج داخل كل هايبر</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">اضغط على أي نموذج للانتقال إلى إعداد مفتاحه</div>
+
+        <style>
+          .hyper-block{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:14px;margin-bottom:10px}
+          .hyper-block-title{font-size:13px;font-weight:900;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+          .hyper-block-sub{font-size:10px;color:var(--text-muted);font-weight:400;margin-right:auto}
+          .model-chips{display:flex;flex-wrap:wrap;gap:6px}
+          .mc{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid;transition:all 0.2s}
+          .mc:hover{transform:translateY(-1px);filter:brightness(1.3)}
+          .mc .st{font-size:9px;opacity:0.65;padding:1px 4px;border-radius:3px;background:rgba(0,0,0,0.25)}
+          .mc.or{background:rgba(0,212,255,0.08);color:#22d3ee;border-color:rgba(0,212,255,0.2)}
+          .mc.cl{background:rgba(168,85,247,0.1);color:#c084fc;border-color:rgba(168,85,247,0.25)}
+          .mc.gg{background:rgba(59,130,246,0.1);color:#60a5fa;border-color:rgba(59,130,246,0.25)}
+          .mc.gr{background:rgba(0,230,118,0.08);color:#4ade80;border-color:rgba(0,230,118,0.2)}
+          .mc.h35{background:rgba(245,158,11,0.1);color:#fbbf24;border-color:rgba(245,158,11,0.3)}
+          .mb-sm{font-size:9px;padding:2px 7px;border-radius:5px;font-weight:700}
+          .mb-seq{background:rgba(120,120,120,0.15);color:#999;border:1px solid rgba(255,255,255,0.1)}
+          .mb-par{background:rgba(0,230,118,0.12);color:#00e676;border:1px solid rgba(0,230,118,0.3)}
+          .mb-h35{background:rgba(245,158,11,0.12);color:#fbbf24;border:1px solid rgba(245,158,11,0.3)}
+          .key-highlight{outline:2px solid #fbbf24 !important;background:rgba(245,158,11,0.12) !important}
+        </style>
+
+        <div class="hyper-block">
+          <div class="hyper-block-title">
+            🔥 هايبر ١
+            <span class="mb-sm mb-seq">متسلسل</span>
+            <span class="hyper-block-sub">٥ نماذج — الأول المتاح يرد</span>
+          </div>
+          <div class="model-chips">
+            <div class="mc or" onclick="goToKey('devOR1')">⚡ GPT-4o Mini <span class="st">OR-1</span></div>
+            <div class="mc or" onclick="goToKey('devOR2')">🔵 GPT-4o <span class="st">OR-2</span></div>
+            <div class="mc cl" onclick="goToKey('devOR3')">🤖 Claude 4.0 <span class="st">OR-3</span></div>
+            <div class="mc cl" onclick="goToKey('devOR4')">⭐ Claude 3.0 <span class="st">OR-4</span></div>
+            <div class="mc or" onclick="goToKey('devOR5')">🧠 o3 Mini <span class="st">OR-5</span></div>
+          </div>
+        </div>
+
+        <div class="hyper-block">
+          <div class="hyper-block-title">
+            💎 هايبر ١.٥
+            <span class="mb-sm mb-seq">متسلسل</span>
+            <span class="hyper-block-sub">٥ نماذج — الأول المتاح يرد</span>
+          </div>
+          <div class="model-chips">
+            <div class="mc or" onclick="goToKey('devOR1')">🔵 GPT-4o عام <span class="st">OR-1</span></div>
+            <div class="mc or" onclick="goToKey('devOR2')">🎯 GPT-4o دقة <span class="st">OR-2</span></div>
+            <div class="mc or" onclick="goToKey('devOR3')">📐 GPT-4o منطق <span class="st">OR-3</span></div>
+            <div class="mc or" onclick="goToKey('devOR4')">🧠 o3 Mini <span class="st">OR-4</span></div>
+            <div class="mc cl" onclick="goToKey('devOR5')">✍️ Claude 3.5 Sonnet <span class="st">OR-5</span></div>
+          </div>
+        </div>
+
+        <div class="hyper-block">
+          <div class="hyper-block-title">
+            👑 هايبر ١ برو
+            <span class="mb-sm mb-par">بالتوازي + محكم</span>
+            <span class="hyper-block-sub">٤ نماذج + محكم Claude 3.5</span>
+          </div>
+          <div class="model-chips">
+            <div class="mc or" onclick="goToKey('devOR1')">🔵 GPT-4o <span class="st">OR-1</span></div>
+            <div class="mc or" onclick="goToKey('devOR2')">⚡ GPT-4o Mini <span class="st">OR-2</span></div>
+            <div class="mc cl" onclick="goToKey('devOR3')">🤖 Claude 3.5 Sonnet <span class="st">OR-3</span></div>
+            <div class="mc gr" onclick="goToKey('devOR4')">🦙 Llama 3.3 70B <span class="st">OR-4</span></div>
+            <div class="mc cl" onclick="goToKey('devOR1')" style="opacity:0.75">⚖️ محكم Claude 3.5 <span class="st">OR-1</span></div>
+          </div>
+        </div>
+
+        <div class="hyper-block">
+          <div class="hyper-block-title">
+            ✨ هايبر ١.٥ برو
+            <span class="mb-sm mb-par">بالتوازي + محكم</span>
+            <span class="hyper-block-sub">٥ نماذج + محكم Claude 3.5</span>
+          </div>
+          <div class="model-chips">
+            <div class="mc or" onclick="goToKey('devOR1')">🔵 GPT-4o <span class="st">OR-1</span></div>
+            <div class="mc cl" onclick="goToKey('devOR2')">🤖 Claude 3.5 Sonnet <span class="st">OR-2</span></div>
+            <div class="mc cl" onclick="goToKey('devOR3')">👑 Claude 3.0 Opus <span class="st">OR-3</span></div>
+            <div class="mc gr" onclick="goToKey('devOR4')">🦙 Llama 3.1 8B <span class="st">OR-4</span></div>
+            <div class="mc gg" onclick="goToKey('devOR5')">🌐 Gemini 2.5 Flash <span class="st">OR-5</span></div>
+            <div class="mc cl" onclick="goToKey('devOR1')" style="opacity:0.75">⚖️ محكم Claude 3.5 <span class="st">OR-1</span></div>
+          </div>
+        </div>
+
+        <div class="hyper-block" style="border-color:rgba(245,158,11,0.25);">
+          <div class="hyper-block-title" style="color:#fbbf24;">
+            ⭐ هايبر ٣.٥ برو
+            <span class="mb-sm mb-h35">٥ مراحل — ١٢ نموذج</span>
+            <span class="hyper-block-sub">الأقوى</span>
+          </div>
+          <div style="font-size:10px;color:#8a7a60;margin-bottom:6px;">المرحلة ١ — عمال بالتوازي:</div>
+          <div class="model-chips" style="margin-bottom:8px;">
+            <div class="mc h35" onclick="goToKey('devH35OR1')">GPT-4o ×٤ <span class="st">H35</span></div>
+            <div class="mc h35" onclick="goToKey('devH35OR4')">🧠 o3 Mini ×٢ <span class="st">H35-4</span></div>
+            <div class="mc h35" onclick="goToKey('devH35OR1')">💻 DeepSeek Chat <span class="st">H35-1</span></div>
+            <div class="mc h35" onclick="goToKey('devH35Google')">🌐 Gemini 1.5 Flash <span class="st">H35-G</span></div>
+            <div class="mc h35" onclick="goToKey('devH35Google')">🌐 Gemini 2.5 Flash <span class="st">H35-G</span></div>
+            <div class="mc h35" onclick="goToKey('devH35Anthropic')">🤖 Claude 4.0 <span class="st">H35-A</span></div>
+            <div class="mc h35" onclick="goToKey('devH35Anthropic')">✍️ Claude 3.5 Sonnet <span class="st">H35-A</span></div>
+          </div>
+          <div style="font-size:10px;color:#8a7a60;margin-bottom:6px;">المراحل ٢٣٤٥ — تحقق ومحاكمة:</div>
+          <div class="model-chips">
+            <div class="mc h35" onclick="goToKey('devH35Anthropic')">⭐ Claude 4.0 محكم <span class="st">H35-A</span></div>
+            <div class="mc h35" onclick="goToKey('devH35OR4')">🔬 o3 Mini تحقق <span class="st">H35-4</span></div>
+            <div class="mc h35" onclick="goToKey('devH35OR3')">⚡ GPT-4o Mini تحقق <span class="st">H35-3</span></div>
+            <div class="mc h35" onclick="goToKey('devH35OR1')">🌙 Kimi-K2 تحقق <span class="st">H35-1</span></div>
+            <div class="mc h35" onclick="goToKey('devH35Anthropic')">✅ Claude 4.0 نهائي <span class="st">H35-A</span></div>
+          </div>
+        </div>
+
+        <script>
+        (function(){
+          if(window._goToKeyDefined) return;
+          window._goToKeyDefined = true;
+          window.goToKey = function(id){
+            var el = document.getElementById(id);
+            if(!el) return;
+            el.scrollIntoView({behavior:'smooth',block:'center'});
+            el.classList.add('key-highlight');
+            el.focus();
+            setTimeout(function(){ el.classList.remove('key-highlight'); }, 2500);
+          };
+        })();
+        </script>
+
+
+        <!-- OpenRouter - 5 مفاتيح (عامة) -->
+          <div class="form-group">
+            <div class="form-label">🔄 OpenRouter (5 مفاتيح عامة) — للهايبر والعمق والسرعة</div>
+            <div class="input-row"><input type="password" class="key-input" id="devOR1" placeholder="sk-or-v1-... #1"><button class="toggle-btn" onclick="toggleInput('devOR1')">👁</button></div>
+            <div class="input-row" style="margin-top:8px"><input type="password" class="key-input" id="devOR2" placeholder="sk-or-v1-... #2"><button class="toggle-btn" onclick="toggleInput('devOR2')">👁</button></div>
+            <div class="input-row" style="margin-top:8px"><input type="password" class="key-input" id="devOR3" placeholder="sk-or-v1-... #3"><button class="toggle-btn" onclick="toggleInput('devOR3')">👁</button></div>
+            <div class="input-row" style="margin-top:8px"><input type="password" class="key-input" id="devOR4" placeholder="sk-or-v1-... #4"><button class="toggle-btn" onclick="toggleInput('devOR4')">👁</button></div>
+            <div class="input-row" style="margin-top:8px"><input type="password" class="key-input" id="devOR5" placeholder="sk-or-v1-... #5"><button class="toggle-btn" onclick="toggleInput('devOR5')">👁</button></div>
+            <div class="hint">5 مفاتيح OpenRouter العامة — تشغّل الهايبر والعمق والسرعة</div>
+          </div>
+
+          <!-- Google -->
+          <div class="form-group">
+            <div class="form-label">🌐 Google (Gemini)</div>
+            <div class="input-row"><input type="password" class="key-input" id="devGoogle" placeholder="AIza..."><button class="toggle-btn" onclick="toggleInput('devGoogle')">👁</button></div>
+            <div class="hint">للهايبر والعمق والسرعة</div>
+          </div>
+
+          <!-- ChatGPT -->
+          <div class="form-group">
+            <div class="form-label">💬 ChatGPT (OpenAI مباشر)</div>
+            <div class="input-row"><input type="password" class="key-input" id="devChatGPT" placeholder="sk-proj-..."><button class="toggle-btn" onclick="toggleInput('devChatGPT')">👁</button></div>
+            <div class="hint">للهايبر والعمق والسرعة</div>
+          </div>
+
+          <!-- Groq -->
+          <div class="form-group">
+            <div class="form-label">⚡ Groq (سرعة فائقة)</div>
+            <div class="input-row"><input type="password" class="key-input" id="devGroq" placeholder="gsk_..."><button class="toggle-btn" onclick="toggleInput('devGroq')">👁</button></div>
+            <div class="hint">للهايبر والعمق والسرعة</div>
+          </div>
+
+          <!-- Together AI -->
+          <div class="form-group">
+            <div class="form-label">🔮 Together AI</div>
+            <div class="input-row"><input type="password" class="key-input" id="devTogether" placeholder="together_..."><button class="toggle-btn" onclick="toggleInput('devTogether')">👁</button></div>
+            <div class="hint">للعمق والسرعة فقط</div>
+          </div>
+
+          <!-- Replicate -->
+          <div class="form-group">
+            <div class="form-label">🎬 Replicate (توليد فيديو 5 ثوانٍ)</div>
+            <div class="input-row"><input type="password" class="key-input" id="devReplicate" placeholder="r8_..."><button class="toggle-btn" onclick="toggleInput('devReplicate')">👁</button></div>
+            <div class="hint">لتوليد مقاطع الفيديو القصيرة</div>
+          </div>
+
+          <!-- ===== قسم هايبر 3.5 برو المخصص ===== -->
+          <div class="form-group" style="border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:14px;background:rgba(245,158,11,0.04)">
+            <div class="form-label" style="color:#f59e0b;font-size:14px">⚡ هايبر ٣.٥ برو — مفاتيح مخصصة</div>
+            <div class="hint" style="margin-bottom:12px">هذه المفاتيح تشغّل النظام الكامل ٧+١ نماذج بالتوازي</div>
+
+            <div class="form-label" style="font-size:11px;margin-bottom:4px">🔄 OpenRouter (4 مفاتيح للنظام الكامل)</div>
+            <div class="input-row"><input type="password" class="key-input" id="devH35OR1" placeholder="sk-or-v1-... (الرئيسي — GPT-4o + DeepSeek)"><button class="toggle-btn" onclick="toggleInput('devH35OR1')">👁</button></div>
+            <div class="input-row" style="margin-top:6px"><input type="password" class="key-input" id="devH35OR2" placeholder="sk-or-v1-... (ChatGPT Inst + Gemini)"><button class="toggle-btn" onclick="toggleInput('devH35OR2')">👁</button></div>
+            <div class="input-row" style="margin-top:6px"><input type="password" class="key-input" id="devH35OR3" placeholder="sk-or-v1-... (GPT-4o Mini + Kimi K2)"><button class="toggle-btn" onclick="toggleInput('devH35OR3')">👁</button></div>
+            <div class="input-row" style="margin-top:6px"><input type="password" class="key-input" id="devH35OR4" placeholder="sk-or-v1-... (o3 Mini)"><button class="toggle-btn" onclick="toggleInput('devH35OR4')">👁</button></div>
+
+            <div class="form-label" style="font-size:11px;margin-top:12px;margin-bottom:4px">🏢 مفاتيح الشركات المباشرة</div>
+            <div class="input-row" style="margin-top:4px"><input type="password" class="key-input" id="devH35OpenAI" placeholder="OpenAI مباشر sk-proj-..."><button class="toggle-btn" onclick="toggleInput('devH35OpenAI')">👁</button></div>
+            <div class="input-row" style="margin-top:6px"><input type="password" class="key-input" id="devH35Google" placeholder="Google AIza... (Gemini 1.5 + 2.5 Flash)"><button class="toggle-btn" onclick="toggleInput('devH35Google')">👁</button></div>
+            <div class="input-row" style="margin-top:6px"><input type="password" class="key-input" id="devH35Anthropic" placeholder="Anthropic/Claude (OpenRouter key)"><button class="toggle-btn" onclick="toggleInput('devH35Anthropic')">👁</button></div>
+            <div class="input-row" style="margin-top:6px"><input type="password" class="key-input" id="devH35DeepSeek" placeholder="DeepSeek (OpenRouter key)"><button class="toggle-btn" onclick="toggleInput('devH35DeepSeek')">👁</button></div>
+          </div>
+
+          <button class="save-btn dev-save" id="devSaveBtn" onclick="saveDevKeys()">💾 حفظ مفاتيح المطور</button>
+        <div class="hint" style="text-align:center;margin-top:10px;">المفاتيح محمية وسرية تماماً — خاصة بالمطور فقط</div>
+
+        <!-- IP الجوال (خاص بالمطور فقط) -->
+        <div class="form-group" style="margin-top:22px;border-top:1px solid rgba(0,212,255,0.15);padding-top:18px;">
+          <div class="form-label">📱 IP الجوال (دخول تلقائي للمطور)</div>
+          <div class="input-row">
+            <input type="text" class="key-input" id="devPhoneIP" placeholder="مثال: 192.168.1.5">
+            <button class="toggle-btn" onclick="detectMyIP()" title="كشف IP الحالي">🔍</button>
+          </div>
+          <div class="hint">عند الدخول من هذا الـ IP يُعرّف الموقع تلقائياً أنك المطور — سري تماماً</div>
+        </div>
+
+        <!-- الذكاء الاصطناعي الدفاعي -->
+        <div class="form-group" style="border-top:1px solid rgba(0,212,255,0.15);padding-top:18px;">
+          <div class="form-label">🛡️ الذكاء الاصطناعي الدفاعي</div>
+          <div class="defense-panel" id="defensePanel">
+            <div class="defense-status" id="defenseStatus">
+              <span class="defense-dot" id="defenseDot"></span>
+              <span id="defenseStateText">الحماية نشطة — فحص كامل كل 20 دقيقة</span>
+            </div>
+            <div class="defense-stats">
+              <div class="defense-stat"><span id="defScans">0</span><small>فحوصات</small></div>
+              <div class="defense-stat"><span id="defThreats">0</span><small>تهديدات مصدودة</small></div>
+              <div class="defense-stat"><span id="defLastScan">—</span><small>آخر فحص</small></div>
+            </div>
+            <div class="defense-log" id="defenseLog"></div>
+            <div class="input-row" style="margin-top:12px;">
+              <button class="save-btn dev-save" style="margin:0;" onclick="runDefenseScanNow()">🔍 فحص فوري الآن</button>
+            </div>
+            <label class="defense-toggle">
+              <input type="checkbox" id="defenseHiddenMode" onchange="toggleDefenseVisibility()"> إخفاء لوحة الحماية (تعمل في الخلفية)
+            </label>
+          </div>
+          <div class="hint">يسد الثغرات ويفحص الفيروسات والتهديدات تلقائياً — يعمل خفياً ويظهر عند رصد تهديد</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAT ADMIN MODAL -->
+  <div class="chat-modal-overlay" id="chatModal">
+    <div class="chat-modal-box">
+      <button class="chat-modal-close" onclick="closeChatModal()">✕</button>
+      <div class="chat-modal-title">💬 لوحة إدارة الدردشة</div>
+      <div class="chat-modal-sub">تحكم كامل في النماذج والتعليمات والإعدادات — خاص بالمطور فقط</div>
+
+      <!-- إضافة نموذج جديد -->
+      <div class="chat-section-title">➕ إضافة نموذج جديد</div>
+      <div style="display:flex;gap:8px;align-items:stretch">
+        <input type="text" class="chat-text-input" id="newModelName" placeholder="اسم النموذج — مثل: GPT-5, Claude 4.5, Gemini Ultra..." style="flex:1">
+        <button class="chat-add-btn" onclick="addChatModel()">➕ أضف</button>
+      </div>
+      <div id="chatModelsList" class="models-list"><span style="color:#2a4a5a;font-size:12px">لا توجد نماذج مضافة بعد</span></div>
+
+      <div class="divider"></div>
+
+      <!-- التعليمات -->
+      <div class="chat-section-title">📋 التعليمات (System Prompt)</div>
+      <textarea class="chat-text-input" id="chatInstructions" placeholder="اكتب التعليمات التي سيتبعها الذكاء الاصطناعي مع جميع المستخدمين..." style="min-height:110px"></textarea>
+
+      <div class="divider"></div>
+
+      <!-- الأوامر الصارمة -->
+      <div class="chat-section-title">🔒 الأوامر الصارمة للمالك</div>
+      <div style="background:rgba(0,212,255,0.03);border:1px solid rgba(0,212,255,0.12);border-radius:14px;padding:16px">
+        <div class="strict-toggle-row">
+          <div class="strict-toggle-label">🚫 منع مشاركة المعلومات الخاصة
+            <small>لا يُفصح الذكاء الاصطناعي عن معلومات النظام أو المطور</small>
+          </div>
+          <label class="strict-switch"><input type="checkbox" id="strictPrivacy" checked><span class="strict-slider"></span></label>
+        </div>
+        <div class="strict-toggle-row">
+          <div class="strict-toggle-label">🛡️ الحماية من المحتوى الضار
+            <small>رفض أي طلبات مسيئة أو ضارة تلقائياً</small>
+          </div>
+          <label class="strict-switch"><input type="checkbox" id="strictSafe" checked><span class="strict-slider"></span></label>
+        </div>
+        <div class="strict-toggle-row">
+          <div class="strict-toggle-label">📵 منع إظهار مفاتيح API
+            <small>لا تُكشف مفاتيح المطور تحت أي ظرف</small>
+          </div>
+          <label class="strict-switch"><input type="checkbox" id="strictKeys" checked><span class="strict-slider"></span></label>
+        </div>
+        <div class="strict-toggle-row">
+          <div class="strict-toggle-label">🔇 وضع الصمت عن الهوية
+            <small>لا يُعرّف النموذج عن نفسه أو عن الشركة المصنّعة</small>
+          </div>
+          <label class="strict-switch"><input type="checkbox" id="strictIdentity"><span class="strict-slider"></span></label>
+        </div>
+        <div class="strict-toggle-row">
+          <div class="strict-toggle-label">📝 تسجيل رسائل المستخدمين
+            <small>احتفظ بسجل المحادثات للمراجعة لاحقاً</small>
+          </div>
+          <label class="strict-switch"><input type="checkbox" id="strictLog"><span class="strict-slider"></span></label>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- التوجيهات الإضافية -->
+      <div class="chat-section-title">🧭 التوجيهات الإضافية</div>
+      <textarea class="chat-text-input" id="chatGuidance" placeholder="توجيهات لأسلوب الرد ونبرة الكلام وطريقة المعالجة..." style="min-height:90px"></textarea>
+
+      <div class="divider"></div>
+
+      <!-- المعلومات الإضافية -->
+      <div class="chat-section-title">ℹ️ معلومات إضافية</div>
+      <textarea class="chat-text-input" id="chatExtraInfo" placeholder="معلومات عن الموقع أو المنتج تُضاف لسياق الذكاء الاصطناعي..." style="min-height:90px"></textarea>
+
+      <div class="divider"></div>
+
+      <!-- مفاتيح المطور للجميع -->
+      <div class="chat-section-title">🔑 مفتاح Groq العام (يشتغل لجميع المستخدمين)</div>
+      <div style="font-size:12px;color:#4a7a8a;margin-bottom:10px">هذا المفتاح يُستخدم تلقائياً لجميع المستخدمين دون الحاجة لإضافة مفاتيح خاصة</div>
+      <div style="display:flex;gap:8px">
+        <input type="password" class="chat-text-input" id="chatGroqKey" placeholder="gsk_..." style="flex:1">
+        <button class="toggle-btn" onclick="toggleInput('chatGroqKey')">👁</button>
+      </div>
+      <div style="font-size:11px;color:#2a4a5a;margin-top:6px">يُحفظ بشكل آمن ويُطبّق على جميع محادثات الموقع</div>
+
+      <button class="chat-save-btn" id="chatSaveBtn" onclick="saveChatSettings()">💾 حفظ إعدادات الدردشة</button>
+      <div style="font-size:11px;color:#2a4a5a;text-align:center;margin-top:10px">الإعدادات سرية وتُطبّق على جميع المستخدمين فوراً</div>
+    </div>
+  </div>
+
+  <!-- MAIN PAGE -->
+  <div class="page">
+    <div class="topbar">
+      <button class="back-btn" onclick="window.location.href='/mode.html'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+        رجوع
+      </button>
+      <div class="topbar-logo" id="logoTap" title="Nexus AI PRO">
+        <svg width="22" height="22" viewBox="0 0 40 40" fill="none">
+          <polygon points="20,2 36,12 36,28 20,38 4,28 4,12" stroke="#00d4ff" stroke-width="2.5" fill="rgba(0,212,255,0.08)"/>
+          <circle cx="20" cy="20" r="5" fill="#00d4ff" opacity="0.9"/>
+        </svg>
+        NEXUS AI PRO
+      </div>
+    </div>
+
+    <!-- Developer Panel Button -->
+    <div class="dev-btn-card" id="devBtnCard">
+      <div class="dev-btn-label">
+        🤖 لوحة المطور المتقدمة
+        <small>ذكاء اصطناعي حصري + صلاحيات كاملة + خصوصية تامة</small>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="dev-unlocked-indicator" id="devUnlockedBadge">✅ معتمد</span>
+        <button class="open-dev-btn" onclick="openDevModal()">🔐 فتح اللوحة</button>
+      </div>
+
+    <!-- خانة الدردشة — مخفية عن المستخدمين العاديين، تظهر للمطور فقط -->
+    <div class="chat-btn-card" id="chatBtnCard" style="display:none;">
+      <div class="chat-btn-label">
+        💬 لوحة إدارة الدردشة
+        <small>تعليمات + نماذج + أوامر صارمة + توجيهات — خاص بالمطور فقط</small>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="chat-unlocked-indicator" id="chatSavedBadge">✅ محفوظ</span>
+        <button class="open-chat-btn" onclick="openChatModal()">💬 إدارة الدردشة</button>
+      </div>
+    </div>
+
+      <!-- User Preferences Card -->
+      <div class="dev-btn-card" style="margin-top:16px">
+        <div class="dev-btn-label">⚙️ الإعدادات الشخصية</div>
+        <div style="margin-top:14px">
+          <!-- 48h auto-delete -->
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06)">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:#e2e8f0">🗑️ حذف المحادثات تلقائياً</div>
+              <div style="font-size:11px;color:#7a8a9a;margin-top:2px">تُحذف المحادثات بعد 48 ساعة من آخر رسالة</div>
+            </div>
+            <label style="position:relative;width:44px;height:24px;cursor:pointer">
+              <input type="checkbox" id="autoDelete48h" onchange="saveUserPrefs()" style="opacity:0;width:0;height:0">
+              <span style="position:absolute;inset:0;background:#2a2a3a;border-radius:12px;transition:0.3s"></span>
+              <span id="toggleKnob48" style="position:absolute;left:3px;top:3px;width:18px;height:18px;background:#666;border-radius:50%;transition:0.3s"></span>
+            </label>
+          </div>
+          <!-- Save notice -->
+          <div id="userPrefSaved" style="display:none;font-size:11px;color:#22c55e;text-align:center;margin-top:10px">✅ تم حفظ الإعدادات</div>
+        </div>
+      </div>
+
+    
+  </div>
+
+  <script>
+    // ==========================================
+    // CANVAS BACKGROUND
+    // ==========================================
+    (function() {
+      const canvas = document.getElementById('bg');
+      const ctx = canvas.getContext('2d');
+      const stars = [];
+      function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+      resize();
+      window.addEventListener('resize', resize);
+      for (let i = 0; i < 80; i++) {
+        stars.push({ x: Math.random() * window.innerWidth, y: Math.random() * window.innerHeight,
+          r: Math.random() * 1.2 + 0.2, a: Math.random(),
+          s: (Math.random() * 0.006 + 0.002) * (Math.random() > 0.5 ? 1 : -1) });
+      }
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        stars.forEach(s => {
+          s.a += s.s; if (s.a > 1 || s.a < 0) s.s *= -1;
+          ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(0,212,255,${s.a * 0.5})`; ctx.fill();
+        });
+        requestAnimationFrame(draw);
+      }
+      draw();
+    })();
+
+    // ==========================================
+    // COPY PROTECTION
+    // ==========================================
+    document.addEventListener('copy', function(e) {
+      e.preventDefault();
+      showToast('🔒 ممنوع نسخ — خصوصية', 'error');
+    });
+    document.addEventListener('cut', function(e) {
+      const active = document.activeElement;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return;
+      e.preventDefault();
+      showToast('🔒 ممنوع نسخ — خصوصية', 'error');
+    });
+    document.addEventListener('contextmenu', function(e) {
+      e.preventDefault();
+      showToast('🔒 ممنوع نسخ — خصوصية', 'error');
+    });
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && ['c','x','a','s'].includes(e.key.toLowerCase())) {
+        const active = document.activeElement;
+        if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return;
+        e.preventDefault();
+        if (e.key.toLowerCase() !== 's') showToast('🔒 ممنوع نسخ — خصوصية', 'error');
+      }
+    });
+
+    // ==========================================
+    // TOAST
+    // ==========================================
+    function showToast(msg, type = 'success') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'toast ' + type;
+      t.style.display = 'block';
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => { t.style.display = 'none'; }, 3500);
+    }
+
+    // ==========================================
+    // CLIENT-SIDE SHA-256 (Web Crypto API)
+    // ==========================================
+    async function sha256Browser(str) {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(str).trim()));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+    }
+
+    const CODE_HASHES = [
+      'feddf96d9fffe23e57a7ccfccaceba7b8549899b172eadd09bf383b9776f8716'
+    ];
+
+    // رمز المطور المباشر — قبول مضمون (يتجاهل المسافات والمحارف المخفية)
+    const DEV_CODE_PLAIN = '7722470267788996633qwertyuiopasdfghjkl';
+    function normalizeCode(s) {
+      return String(s).replace(/[\s\u200B-\u200F\u202A-\u202E\uFEFF]/g, '');
+    }
+
+    // ==========================================
+    // DEV MODAL — OPEN / CLOSE
+    // ==========================================
+    function openDevModal() {
+      document.getElementById('devModal').classList.add('open');
+
+      // إذا كان المطور قد تحقق مسبقاً (الرمز يُستخدم مرة واحدة) — يدخل اللوحة فوراً دون إعادة الرمز
+      if (localStorage.getItem('nexus_dev_unlocked') === '1') {
+        showUnlockedPanel();
+        loadDevKeys();
+        return;
+      }
+
+      document.getElementById('codeScreen').style.display = 'block';
+      document.getElementById('devContent').classList.remove('unlocked');
+      document.getElementById('codeInput').value = '';
+      document.getElementById('codeWarning').textContent = '';
+      setTimeout(() => document.getElementById('codeInput').focus(), 300);
+    }
+
+    function closeDevModal() {
+      document.getElementById('devModal').classList.remove('open');
+    }
+
+    // 5-tap logo to open
+    let tapCount = 0, tapTimer = null;
+    document.getElementById('logoTap').addEventListener('click', function() {
+      tapCount++;
+      clearTimeout(tapTimer);
+      tapTimer = setTimeout(() => { tapCount = 0; }, 2000);
+      if (tapCount >= 5) { tapCount = 0; openDevModal(); }
+    });
+
+    // ==========================================
+    // CODE VERIFICATION
+    // ==========================================
+    window.submitCode = async function() {
+      const code = document.getElementById('codeInput').value.trim();
+      if (!code) { showToast('أدخل الرمز السري', 'error'); return; }
+
+      const btn = document.getElementById('codeBtn');
+      btn.disabled = true;
+      btn.textContent = '⏳ جاري التحقق...';
+      document.getElementById('codeWarning').textContent = '';
+
+      const cleanCode = normalizeCode(code);
+      const inputHash = await sha256Browser(cleanCode);
+      let codeIndex = CODE_HASHES.indexOf(inputHash);
+      // قبول مباشر مضمون للرمز السري
+      if (codeIndex === -1 && cleanCode === DEV_CODE_PLAIN) codeIndex = 0;
+
+      if (codeIndex === -1) {
+        const inp = document.getElementById('codeInput');
+        inp.classList.add('error-shake');
+        setTimeout(() => inp.classList.remove('error-shake'), 500);
+        document.getElementById('codeWarning').textContent = 'الرمز غير صالح — تحقق من الرمز وأعد المحاولة';
+        showToast('❌ الرمز غير صالح', 'error');
+        btn.disabled = false;
+        btn.textContent = '🔓 دخول';
+        return;
+      }
+
+      localStorage.setItem('nexus_dev_unlocked', '1');
+      document.getElementById('devUnlockedBadge').style.display = 'inline-block';
+      showToast('✅ تم التحقق — لوحة المطور مفعلة', 'success');
+
+      setTimeout(() => showUnlockedPanel(), 500);
+      setTimeout(() => loadDevKeys(), 550);
+      btn.disabled = false;
+      btn.textContent = '🔓 دخول';
+    };
+
+    // ==========================================
+    // LOAD SAVED DEVELOPER KEYS (visible to developer only)
+    // ==========================================
+    async function loadDevKeys() {
+      let keys = null;
+      try {
+        const r = await fetch('/api/dev-save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'load_keys' }),
+          signal: AbortSignal.timeout(10000)
+        });
+        if (r.ok) {
+          const data = await r.json();
+          keys = data.keys || data;
+        }
+      } catch {}
+
+      if (!keys) {
+        try { keys = JSON.parse(localStorage.getItem('nexus_dev_ai_keys') || 'null'); } catch {}
+      }
+      if (!keys) return;
+
+      const map = {
+          devOR1: keys.openrouter_1, devOR2: keys.openrouter_2, devOR3: keys.openrouter_3,
+          devOR4: keys.openrouter_4, devOR5: keys.openrouter_5,
+          devGoogle: keys.google, devChatGPT: keys.chatgpt,
+          devGroq: keys.groq, devTogether: keys.together,
+          devReplicate: keys.replicate,
+          devH35OR1: keys.h35_or1, devH35OR2: keys.h35_or2,
+          devH35OR3: keys.h35_or3, devH35OR4: keys.h35_or4,
+          devH35OpenAI: keys.h35_openai, devH35Google: keys.h35_google,
+          devH35Anthropic: keys.h35_anthropic, devH35DeepSeek: keys.h35_deepseek
+        };
+      Object.entries(map).forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (el && val) el.value = val;
+      });
+    }
+
+    // ==========================================
+    // SHOW UNLOCKED PANEL
+    // ==========================================
+    function showUnlockedPanel() {
+      document.getElementById('codeScreen').style.display = 'none';
+      document.getElementById('devContent').classList.add('unlocked');
+    }
+
+    // ==========================================
+    // TOGGLE VISIBILITY
+    // ==========================================
+    window.toggleInput = function(id) {
+      const inp = document.getElementById(id);
+      if (inp) inp.type = inp.type === 'password' ? 'text' : 'password';
+    };
+
+    // ==========================================
+    // SAVE DEVELOPER KEYS
+    // ==========================================
+    window.saveDevKeys = async function() {
+      const btn = document.getElementById('devSaveBtn');
+      btn.disabled = true;
+      btn.textContent = '⏳ جاري الحفظ...';
+
+      const keys = {
+        openrouter_1: (document.getElementById('devOR1')?.value || '').trim(),
+        openrouter_2: (document.getElementById('devOR2')?.value || '').trim(),
+        openrouter_3: (document.getElementById('devOR3')?.value || '').trim(),
+        openrouter_4: (document.getElementById('devOR4')?.value || '').trim(),
+        openrouter_5: (document.getElementById('devOR5')?.value || '').trim(),
+        google:    (document.getElementById('devGoogle')?.value || '').trim(),
+        chatgpt:   (document.getElementById('devChatGPT')?.value || '').trim(),
+        groq:      (document.getElementById('devGroq')?.value || '').trim(),
+        together:  (document.getElementById('devTogether')?.value || '').trim(),
+          replicate:     (document.getElementById('devReplicate')?.value||'').trim(),
+          h35_or1:       (document.getElementById('devH35OR1')?.value||'').trim(),
+          h35_or2:       (document.getElementById('devH35OR2')?.value||'').trim(),
+          h35_or3:       (document.getElementById('devH35OR3')?.value||'').trim(),
+          h35_or4:       (document.getElementById('devH35OR4')?.value||'').trim(),
+          h35_openai:    (document.getElementById('devH35OpenAI')?.value||'').trim(),
+          h35_google:    (document.getElementById('devH35Google')?.value||'').trim(),
+          h35_anthropic: (document.getElementById('devH35Anthropic')?.value||'').trim(),
+          h35_deepseek:  (document.getElementById('devH35DeepSeek')?.value||'').trim()
+        };
+
+      const count = Object.values(keys).filter(v => v && v.length > 0).length;
+
+      // نسخة محلية موثوقة دائماً — تظهر للمطور في الخانات لاحقاً
+      localStorage.setItem('nexus_dev_ai_keys', JSON.stringify(keys));
+
+      try {
+        const r = await fetch('/api/dev-save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'save_keys', keys }),
+          signal: AbortSignal.timeout(10000)
+        });
+        if (r.ok) {
+          showToast(`✅ تم حفظ ${count} مفتاح — ذكاء اصطناعي متقدم جاهز`, 'success');
+          btn.disabled = false;
+          btn.textContent = '💾 حفظ مفاتيح المطور';
+          return;
+        }
+      } catch {}
+
+      showToast(`✅ تم حفظ ${count} مفتاح محلياً`, 'success');
+
+      btn.disabled = false;
+      btn.textContent = '💾 حفظ مفاتيح المطور';
+    };
+
+    // Close modal on overlay click
+    document.getElementById('devModal').addEventListener('click', function(e) {
+      if (e.target === this) closeDevModal();
+    });
+
+    // ==========================================
+    // INIT
+    // ==========================================
+    if (localStorage.getItem('nexus_dev_unlocked') === '1') {
+      document.getElementById('devUnlockedBadge').style.display = 'inline-block';
+    }
+  
+      // ==========================================
+      // USER PREFERENCES (48h auto-delete)
+      // ==========================================
+      function saveUserPrefs() {
+        const cb = document.getElementById('autoDelete48h');
+        const knob = document.getElementById('toggleKnob48');
+        const toggle = cb.parentElement.querySelector('span:first-of-type');
+        if (cb.checked) {
+          if (toggle) toggle.style.background = '#00d4ff';
+          if (knob) { knob.style.background = '#fff'; knob.style.left = '23px'; }
+        } else {
+          if (toggle) toggle.style.background = '#2a2a3a';
+          if (knob) { knob.style.background = '#666'; knob.style.left = '3px'; }
+        }
+        localStorage.setItem('nexus_user_prefs', JSON.stringify({ autoDelete48h: cb.checked }));
+        const notice = document.getElementById('userPrefSaved');
+        if (notice) { notice.style.display = 'block'; setTimeout(() => notice.style.display = 'none', 2000); }
+
+        // Schedule auto-delete if enabled
+        if (cb.checked) scheduleAutoDelete();
+      }
+
+      function scheduleAutoDelete() {
+        const lastMsg = localStorage.getItem('nexus_last_message_time');
+        if (!lastMsg) return;
+        const elapsed = Date.now() - parseInt(lastMsg);
+        if (elapsed > 48 * 60 * 60 * 1000) {
+          localStorage.removeItem('nexus_chat_history');
+          localStorage.removeItem('nexus_last_message_time');
+        }
+      }
+
+      // Load user prefs on start
+      (function() {
+        try {
+          const prefs = JSON.parse(localStorage.getItem('nexus_user_prefs') || '{}');
+          const cb = document.getElementById('autoDelete48h');
+          if (cb && prefs.autoDelete48h) {
+            cb.checked = true;
+            const knob = document.getElementById('toggleKnob48');
+            const toggle = cb.parentElement.querySelector('span:first-of-type');
+            if (toggle) toggle.style.background = '#00d4ff';
+            if (knob) { knob.style.background = '#fff'; knob.style.left = '23px'; }
+            scheduleAutoDelete();
+          }
+        } catch {}
+      })();
+
+      // ==========================================
+      // IP BLOCK (password protected, one-time)
+      // ==========================================
+      let ipBlockUnlocked = false;
+      const IP_BLOCK_PASS_HASH = '2bNexusBlock!'; // كلمة سر القسم
+
+      function unlockIPBlock() {
+        if (ipBlockUnlocked) return;
+        const pass = document.getElementById('ipBlockPass')?.value || '';
+        // Compare with stored dev password
+        const devKeys = JSON.parse(localStorage.getItem('nexus_dev_ai_keys') || '{}');
+        const validPass = pass === IP_BLOCK_PASS_HASH || pass === (devKeys.ip_block_pass || IP_BLOCK_PASS_HASH);
+        if (validPass) {
+          ipBlockUnlocked = true;
+          const lockDiv = document.getElementById('ipBlockLock');
+          const formDiv = document.getElementById('ipBlockForm');
+          if (lockDiv) lockDiv.style.display = 'none';
+          if (formDiv) formDiv.style.display = 'block';
+          loadBlockedIPs();
+        } else {
+          showToast('❌ كلمة السر غير صحيحة', 'error');
+        }
+      }
+
+      function loadBlockedIPs() {
+        const blocked = JSON.parse(localStorage.getItem('nexus_blocked_ips') || '[]');
+        const listEl = document.getElementById('blockedIPList');
+        if (listEl) {
+          listEl.innerHTML = blocked.length === 0 ? '<span style="color:#666">لا توجد IPs محجوبة</span>'
+            : blocked.map(ip => `<span style="display:inline-block;background:#1a0000;border:1px solid #ff4444;border-radius:6px;padding:2px 8px;margin:2px;font-size:10px">🚫 ${ip} <button onclick="unblockIP('${ip}')" style="background:none;border:none;color:#ff4444;cursor:pointer;font-size:9px">✕</button></span>`).join('');
+        }
+      }
+
+      function addBlockedIP() {
+        const ip = (document.getElementById('blockIPInput')?.value || '').trim();
+        if (!ip) return showToast('أدخل IP صالح', 'error');
+        let blocked = JSON.parse(localStorage.getItem('nexus_blocked_ips') || '[]');
+        if (!blocked.includes(ip)) { blocked.push(ip); localStorage.setItem('nexus_blocked_ips', JSON.stringify(blocked)); }
+        loadBlockedIPs();
+        document.getElementById('blockIPInput').value = '';
+        showToast(`🚫 تم حجب ${ip}`, 'success');
+      }
+
+      function unblockIP(ip) {
+        let blocked = JSON.parse(localStorage.getItem('nexus_blocked_ips') || '[]');
+        blocked = blocked.filter(b => b !== ip);
+        localStorage.setItem('nexus_blocked_ips', JSON.stringify(blocked));
+        loadBlockedIPs();
+        showToast(`✅ تم إلغاء حجب ${ip}`, 'success');
+      }
+
+      // Show IP block section when dev panel is unlocked
+      const _origShowUnlocked = window.showUnlockedPanel;
+      window.showUnlockedPanel = function() {
+        if (_origShowUnlocked) _origShowUnlocked.call(this, ...arguments);
+        const ipSec = document.getElementById('ipBlockSection');
+        if (ipSec) ipSec.style.display = 'block';
+      };
+
+
+    // ==========================================
+    // CHAT ADMIN — OPEN / CLOSE
+    // ==========================================
+    window.openChatModal = function() {
+      document.getElementById('chatModal').classList.add('open');
+      loadChatSettings();
+    };
+    window.closeChatModal = function() {
+      document.getElementById('chatModal').classList.remove('open');
+    };
+    document.getElementById('chatModal').addEventListener('click', function(e) {
+      if (e.target === this) closeChatModal();
+    });
+
+    // ==========================================
+    // CHAT ADMIN — إضافة نموذج
+    // ==========================================
+    window.addChatModel = function() {
+      const inp = document.getElementById('newModelName');
+      const name = (inp.value || '').trim();
+      if (!name) { showToast('أدخل اسم النموذج', 'error'); return; }
+      let models = getChatModels();
+      if (models.includes(name)) { showToast('النموذج موجود بالفعل', 'warn'); return; }
+      models.push(name);
+      saveChatModels(models);
+      renderChatModels();
+      inp.value = '';
+      showToast('✅ تم إضافة النموذج: ' + name, 'success');
+    };
+
+    function getChatModels() {
+      try { return JSON.parse(localStorage.getItem('nexus_chat_models') || '[]'); } catch { return []; }
+    }
+    function saveChatModels(arr) {
+      localStorage.setItem('nexus_chat_models', JSON.stringify(arr));
+    }
+    function renderChatModels() {
+      const models = getChatModels();
+      const el = document.getElementById('chatModelsList');
+      if (!el) return;
+      if (!models.length) {
+        el.innerHTML = '<span style="color:#2a4a5a;font-size:12px">لا توجد نماذج مضافة بعد</span>';
+        return;
+      }
+      el.innerHTML = models.map((m, i) =>
+        '<div class="model-item">💠 ' + m +
+        '<button class="model-item-del" onclick="deleteChatModel(' + i + ')">✕</button></div>'
+      ).join('');
+    }
+    window.deleteChatModel = function(idx) {
+      let models = getChatModels();
+      const name = models[idx];
+      models.splice(idx, 1);
+      saveChatModels(models);
+      renderChatModels();
+      showToast('🗑️ تم حذف: ' + name, 'warn');
+    };
+
+    // ==========================================
+    // CHAT ADMIN — حفظ الإعدادات
+    // ==========================================
+    window.saveChatSettings = async function() {
+      const btn = document.getElementById('chatSaveBtn');
+      btn.disabled = true;
+      btn.textContent = '⏳ جاري الحفظ...';
+
+      const settings = {
+        models:        getChatModels(),
+        instructions:  (document.getElementById('chatInstructions')?.value  || '').trim(),
+        guidance:      (document.getElementById('chatGuidance')?.value       || '').trim(),
+        extraInfo:     (document.getElementById('chatExtraInfo')?.value      || '').trim(),
+        groqKey:       (document.getElementById('chatGroqKey')?.value        || '').trim(),
+        strict: {
+          privacy:     document.getElementById('strictPrivacy')?.checked  ?? true,
+          safe:        document.getElementById('strictSafe')?.checked     ?? true,
+          keys:        document.getElementById('strictKeys')?.checked     ?? true,
+          identity:    document.getElementById('strictIdentity')?.checked ?? false,
+          log:         document.getElementById('strictLog')?.checked      ?? false,
+        }
+      };
+
+      localStorage.setItem('nexus_chat_settings', JSON.stringify(settings));
+      if (settings.groqKey) localStorage.setItem('nexus_public_groq', settings.groqKey);
+
+      try {
+        await fetch('/api/dev-save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'save_chat_settings', settings }),
+          signal: AbortSignal.timeout(8000)
+        });
+      } catch {}
+
+      document.getElementById('chatSavedBadge').style.display = 'inline-block';
+      showToast('✅ تم حفظ إعدادات الدردشة', 'success');
+      btn.disabled = false;
+      btn.textContent = '💾 حفظ إعدادات الدردشة';
+    };
+
+    // ==========================================
+    // CHAT ADMIN — تحميل الإعدادات
+    // ==========================================
+    function loadChatSettings() {
+      let s = null;
+      try { s = JSON.parse(localStorage.getItem('nexus_chat_settings') || 'null'); } catch {}
+      if (!s) return;
+      if (document.getElementById('chatInstructions')) document.getElementById('chatInstructions').value = s.instructions || '';
+      if (document.getElementById('chatGuidance'))     document.getElementById('chatGuidance').value     = s.guidance    || '';
+      if (document.getElementById('chatExtraInfo'))    document.getElementById('chatExtraInfo').value    = s.extraInfo   || '';
+      if (document.getElementById('chatGroqKey'))      document.getElementById('chatGroqKey').value      = s.groqKey     || '';
+      if (s.strict) {
+        ['strictPrivacy','strictSafe','strictKeys','strictIdentity','strictLog'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el && s.strict[id.replace('strict','').toLowerCase()] !== undefined)
+            el.checked = s.strict[id.replace('strict','').toLowerCase()];
+        });
+      }
+      renderChatModels();
+      if (s.instructions || s.models?.length || s.groqKey)
+        document.getElementById('chatSavedBadge').style.display = 'inline-block';
+    }
+
+    // ==========================================
+    // SHOW CHAT CARD WHEN DEV UNLOCKED
+    // ==========================================
+    (function patchShowUnlocked() {
+      const _orig = window.showUnlockedPanel;
+      window.showUnlockedPanel = function() {
+        if (_orig) _orig.apply(this, arguments);
+        const chatCard = document.getElementById('chatBtnCard');
+        if (chatCard) chatCard.style.display = 'flex';
+      };
+      // إذا كان المطور مُفعّلاً مسبقاً
+      if (localStorage.getItem('nexus_dev_unlocked') === '1') {
+        const chatCard = document.getElementById('chatBtnCard');
+        if (chatCard) chatCard.style.display = 'flex';
+      }
+    })();
+
+  
+  </script>
+</body>
+</html>
