@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Nexus AI PRO - الهايبر</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --hyper-color: #f59e0b;
+      --hyper-glow: rgba(245,158,11,0.15);
+      --bg: #010108;
+      --surface: rgba(8,10,22,0.9);
+      --border: rgba(0,212,255,0.15);
+      --text: #e8f4f8;
+      --text-muted: #7a9aaa;
+      --safe-bottom: env(safe-area-inset-bottom, 10px);
+    }
+    html, body { width: 100vw; height: 100dvh; background: var(--bg); color: var(--text); font-family: 'Cairo', sans-serif; overflow: hidden; display: flex; flex-direction: column; }
+    canvas#bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+    .header {
+      position: relative; z-index: 20;
+      background: rgba(5,6,18,0.97);
+      backdrop-filter: blur(20px);
+      border-bottom: 2px solid var(--hyper-color);
+      box-shadow: 0 0 24px var(--hyper-glow);
+      padding: 10px 14px; flex-shrink: 0;
+    }
+    .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+    .logo-row { display: flex; align-items: center; gap: 10px; }
+    .logo-text { font-size: 14px; font-weight: 900; color: var(--hyper-color); display: flex; align-items: center; gap: 6px; }
+    .mode-info { display: flex; flex-direction: column; }
+    .mode-label { font-size: 19px; font-weight: 900; color: var(--hyper-color); text-shadow: 0 0 14px var(--hyper-glow); }
+    .mode-status { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    .header-actions { display: flex; gap: 7px; }
+    .h-btn {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text-muted); padding: 7px 12px; border-radius: 9px;
+      cursor: pointer; font-family: 'Cairo', sans-serif; font-size: 13px;
+      transition: 0.2s; display: flex; align-items: center; gap: 5px; white-space: nowrap;
+    }
+    .h-btn:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+
+    .chat-wrapper { flex: 1; overflow: hidden; display: flex; flex-direction: column; position: relative; z-index: 5; }
+    #chatContainer {
+      flex: 1; overflow-y: auto; padding: 16px;
+      display: flex; flex-direction: column; gap: 20px; scroll-behavior: smooth;
+    }
+    #chatContainer::-webkit-scrollbar { width: 4px; }
+    #chatContainer::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+
+    /* Welcome */
+    .welcome-hyper { text-align: center; padding: 48px 20px; color: var(--text-muted); }
+    .hyper-logo-anim { font-size: 64px; margin-bottom: 16px; animation: logoPulse 2.5s infinite alternate; display: block; }
+    @keyframes logoPulse { from { filter: drop-shadow(0 0 8px var(--hyper-color)); } to { filter: drop-shadow(0 0 28px var(--hyper-color)); } }
+    .welcome-hyper h2 { font-size: 24px; font-weight: 900; color: var(--hyper-color); margin-bottom: 8px; text-shadow: 0 0 18px var(--hyper-glow); }
+    .welcome-hyper p { font-size: 14px; line-height: 1.8; max-width: 440px; margin: 0 auto; }
+
+    /* Messages */
+    .chat-turn { animation: turnIn 0.3s ease-out; }
+    @keyframes turnIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+    .user-turn { display: flex; justify-content: flex-start; }
+    .user-bubble {
+      background: linear-gradient(135deg, rgba(40,25,5,0.95), rgba(25,12,0,0.9));
+      border: 1px solid rgba(255,165,0,0.35);
+      border-radius: 16px 16px 4px 16px;
+      padding: 12px 16px; max-width: 80%;
+      font-size: 14px; line-height: 1.75; word-wrap: break-word;
+      box-shadow: 0 0 15px rgba(255,140,0,0.1);
+    }
+    .msg-img { max-width: 100%; border-radius: 10px; margin-top: 8px; border: 1px solid #444; display: block; }
+    .msg-time { font-size: 10px; color: #556; margin-top: 6px; }
+
+    /* Hyper response — ONE card branded as هايبر */
+    .hyper-turn { width: 100%; display: flex; justify-content: flex-end; }
+    .hyper-response-card {
+      max-width: 88%;
+      background: linear-gradient(135deg, rgba(30,18,0,0.97), rgba(18,10,0,0.95));
+      border: 1.5px solid var(--hyper-color);
+      border-radius: 4px 16px 16px 16px;
+      overflow: hidden;
+      box-shadow: 0 0 24px var(--hyper-glow), 0 8px 32px rgba(0,0,0,0.4);
+      animation: cardIn 0.4s ease-out;
+    }
+    @keyframes cardIn { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+    .hyper-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 14px;
+      background: rgba(245,158,11,0.08);
+      border-bottom: 1px solid rgba(245,158,11,0.2);
+    }
+    .hyper-name-badge {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 13px; font-weight: 900; color: var(--hyper-color);
+    }
+    .hyper-name-badge .hyper-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--hyper-color);
+      box-shadow: 0 0 8px var(--hyper-color);
+      animation: dotPulse 1.5s infinite;
+    }
+    @keyframes dotPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .hyper-card-body {
+      padding: 14px 16px;
+      font-size: 14px; line-height: 1.85;
+      word-wrap: break-word;
+    }
+    .hyper-card-body p { margin-bottom: 10px; }
+    .hyper-card-body h1, .hyper-card-body h2, .hyper-card-body h3 { margin: 12px 0 7px; color: var(--text); }
+    .hyper-card-body ul, .hyper-card-body ol { padding-right: 20px; margin-bottom: 10px; }
+    .hyper-card-body li { margin-bottom: 5px; }
+    .hyper-card-body pre { background: #0d1117 !important; padding: 12px; border-radius: 10px; overflow-x: auto; border: 1px solid #30363d; margin: 10px 0; position: relative; }
+    .hyper-card-body code { font-size: 13px; font-family: 'Courier New', monospace; }
+    .hyper-card-body p code { background: rgba(255,255,255,0.07); padding: 2px 6px; border-radius: 4px; }
+    .hyper-card-body blockquote { border-right: 3px solid var(--hyper-color); padding-right: 12px; color: var(--text-muted); margin: 10px 0; }
+    .hyper-card-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 14px; border-top: 1px solid rgba(255,255,255,0.04);
+    }
+    .copy-reply-btn {
+      background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3);
+      color: var(--hyper-color); padding: 4px 12px; border-radius: 8px;
+      font-size: 12px; cursor: pointer; font-family: 'Cairo', sans-serif; transition: 0.2s;
+    }
+    .copy-reply-btn:hover { background: rgba(245,158,11,0.2); }
+    .reply-time { font-size: 10px; color: #445; }
+
+    /* Loading */
+    .hyper-loading-card {
+      max-width: 88%; align-self: flex-end;
+      background: rgba(15,10,0,0.97);
+      border: 1.5px solid rgba(245,158,11,0.3);
+      border-radius: 4px 16px 16px 16px;
+      padding: 16px 18px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .loading-text { font-size: 13px; color: var(--text-muted); }
+    .loading-text strong { color: var(--hyper-color); }
+    .typing-dots { display: flex; gap: 5px; align-items: center; }
+    .typing-dots span {
+      width: 8px; height: 8px; border-radius: 50%; background: #ff8c00; box-shadow: 0 0 6px #ff8c00;
+      animation: typeDot 1.2s infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typeDot { 0%,80%,100% { opacity: 0.2; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1.2); } }
+
+    /* Input */
+    .input-area {
+      padding: 10px 12px; padding-bottom: calc(10px + var(--safe-bottom));
+      background: rgba(4,5,16,0.98);
+      border-top: 2px solid var(--hyper-color);
+      box-shadow: 0 -4px 24px var(--hyper-glow);
+      flex-shrink: 0; position: relative; z-index: 20;
+    }
+    .img-preview {
+      display: none; padding: 5px; background: #0d0f1e; border-radius: 10px;
+      margin-bottom: 8px; position: relative; width: fit-content;
+      border: 1px solid var(--hyper-color);
+    }
+    .img-preview img { height: 56px; border-radius: 7px; }
+    .img-remove {
+      position: absolute; top: -8px; right: -8px; background: #ff1744; color: #fff;
+      border: 2px solid #fff; border-radius: 50%; width: 22px; height: 22px;
+      cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center;
+    }
+    .input-row { display: flex; align-items: flex-end; gap: 8px; }
+    .input-gradient {
+      flex: 1; padding: 2px; border-radius: 18px;
+      background: linear-gradient(45deg, var(--hyper-color), #a855f7, #06b6d4, var(--hyper-color));
+      background-size: 400%; animation: gradMove 5s infinite linear;
+    }
+    @keyframes gradMove { 0% { background-position: 0 0; } 100% { background-position: 400% 0; } }
+    .msg-input {
+      width: 100%; background: #070912; color: #fff; padding: 12px 16px;
+      border-radius: 16px; border: none; outline: none; font-size: 14px;
+      font-family: 'Cairo', sans-serif; resize: none; overflow: hidden;
+      min-height: 44px; max-height: 160px; line-height: 1.5;
+    }
+    .action-btn {
+      background: #0d0f20; color: #ccc; border: 1px solid #333;
+      width: 44px; height: 44px; border-radius: 50%; cursor: pointer;
+      font-size: 18px; transition: 0.2s; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .action-btn:hover { background: #14162a; transform: scale(1.08); }
+    .send-btn {
+      background: linear-gradient(135deg, rgba(30,15,0,0.95), rgba(80,40,0,0.85));
+      border-color: var(--hyper-color); box-shadow: 0 0 14px var(--hyper-glow);
+    }
+    .send-btn:hover { box-shadow: 0 0 28px var(--hyper-glow); }
+    .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .toast {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.93); border: 1px solid var(--hyper-color);
+      color: var(--hyper-color); padding: 10px 20px; border-radius: 16px;
+      display: none; font-size: 13px; font-weight: 600; z-index: 999;
+    }
+
+    @media (max-width: 480px) {
+      .header-actions .h-btn span { display: none; }
+      .hyper-response-card { max-width: 95%; }
+    }
+  
+      /* ===== Thinking Level Bar ===== */
+      .think-level-bar {
+        display: flex; align-items: center; gap: 6px; padding: 5px 12px;
+        background: rgba(3,4,12,0.98); border-bottom: 1px solid rgba(255,255,255,0.06);
+        flex-shrink: 0; overflow-x: auto; scrollbar-width: none;
+      }
+      .think-level-bar::-webkit-scrollbar { display: none; }
+      .think-lbl { font-size: 10px; color: #5a7a8a; white-space: nowrap; flex-shrink: 0; }
+      .tbtn {
+        padding: 3px 10px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08);
+        background: rgba(255,255,255,0.03); color: #6a8a9a; font-size: 10px;
+        cursor: pointer; white-space: nowrap; font-family: 'Cairo', sans-serif;
+        transition: 0.18s; flex-shrink: 0;
+      }
+      .tbtn:hover { background: rgba(255,255,255,0.07); color: #ccc; }
+      .tbtn.tactive { background: var(--hyper-color) !important; color: #000 !important;
+        border-color: var(--hyper-color) !important; font-weight: 700; }
+      /* Thinking badge next to mode label */
+      .thinking-badge {
+        display: none; align-items: center; gap: 4px; font-size: 11px;
+        color: #ff8c00; margin-right: 6px; text-shadow: 0 0 8px #ff8c0088;
+      }
+      .thinking-badge.visible { display: inline-flex; animation: tbPulse 1.2s infinite; }
+      @keyframes tbPulse { 0%,100%{opacity:0.2; transform:scale(0.9)} 50%{opacity:1; transform:scale(1.15)} }
+  
+      /* ===== Media + Button ===== */
+      .plus-btn {
+        background: #0d0f20; color: #ccc; border: 1px solid #333;
+        width: 44px; height: 44px; border-radius: 50%; cursor: pointer;
+        font-size: 20px; transition: 0.2s; display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; font-weight: 300; line-height: 1;
+      }
+      .plus-btn:hover { background: #14162a; transform: scale(1.08); border-color: var(--hyper-color); color: var(--hyper-color); }
+      .media-menu {
+        position: absolute; bottom: 68px; left: 12px; z-index: 100;
+        background: #0d0f22; border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 14px; padding: 6px; display: none;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.6); min-width: 200px;
+      }
+      .media-menu.open { display: block; animation: menuIn 0.18s ease; }
+      @keyframes menuIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+      .media-item {
+        display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+        border-radius: 10px; cursor: pointer; transition: 0.15s;
+        color: #ccc; font-size: 13px; font-family: 'Cairo', sans-serif;
+      }
+      .media-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+      .media-item .mi-icon { font-size: 18px; width: 24px; text-align: center; }
+      .media-item .mi-sub { font-size: 10px; color: #555; margin-top: 1px; }
+      /* Generated media in chat */
+      .gen-media-wrap { margin: 8px 0; }
+      .gen-img { max-width: 100%; max-height: 400px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); cursor: pointer; }
+      .gen-video { max-width: 100%; border-radius: 12px; }
+      /* Generation loading */
+      .gen-loading {
+        display: flex; align-items: center; gap: 10px; padding: 14px 18px;
+        background: rgba(255,255,255,0.04); border-radius: 14px; border: 1px solid rgba(255,255,255,0.08);
+        color: #7a9aaa; font-size: 13px;
+      }
+      .gen-loading .gl-spin { animation: spin 1s linear infinite; font-size: 18px; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      /* Prompt modal */
+      .gen-modal-overlay {
+        position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.75);
+        display: none; align-items: center; justify-content: center; padding: 20px;
+      }
+      .gen-modal-overlay.open { display: flex; }
+      .gen-modal {
+        background: #0d0f22; border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 18px; padding: 24px; width: 100%; max-width: 420px;
+        box-shadow: 0 16px 48px rgba(0,0,0,0.7);
+      }
+      .gen-modal h3 { font-size: 16px; margin: 0 0 14px; color: #e2e8f0; font-family: 'Cairo', sans-serif; }
+      .gen-modal textarea {
+        width: 100%; background: #070912; color: #fff; border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 10px; padding: 12px; font-size: 14px; font-family: 'Cairo', sans-serif;
+        resize: none; min-height: 80px; outline: none; box-sizing: border-box;
+      }
+      .gen-modal textarea:focus { border-color: var(--hyper-color); }
+      .gen-modal-actions { display: flex; gap: 10px; margin-top: 12px; }
+      .gen-modal-cancel { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #888; cursor: pointer; font-family: 'Cairo', sans-serif; }
+      .gen-modal-go { flex: 2; padding: 10px; border-radius: 10px; border: none; background: var(--hyper-color); color: #000; font-weight: 700; cursor: pointer; font-family: 'Cairo', sans-serif; font-size: 14px; }
+  
+      .menu-section-label {
+        font-size: 9px; color: #4a6a7a; padding: 6px 14px 2px;
+        text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;
+      }
+      .menu-divider {
+        height: 1px; background: rgba(255,255,255,0.06); margin: 4px 0;
+      }
+      /* File upload preview card */
+      .file-preview-card {
+        display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+        background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 12px; margin: 6px 0;
+      }
+      .file-preview-card .fp-icon { font-size: 22px; flex-shrink:0; }
+      .file-preview-card .fp-name { font-size: 12px; color: #e2e8f0; word-break:break-all; }
+      .file-preview-card .fp-size { font-size: 10px; color: #666; margin-top:2px; }
+      /* Location card */
+      .location-card {
+        display:flex; align-items:center; gap:10px; padding:12px 16px;
+        background: rgba(34,197,94,0.06); border:1px solid rgba(34,197,94,0.2);
+        border-radius:12px; cursor:pointer;
+      }
+      .location-card .lc-icon { font-size:20px; }
+      .location-card .lc-text { font-size:12px; color:#4ade80; }
+      .location-card .lc-sub { font-size:10px; color:#555; margin-top:2px; }
+      /* video preview in chat */
+      .uploaded-video { max-width:100%; max-height:300px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); }
+  </style>
+</head>
+<body>
+  <canvas id="bg"></canvas>
+  <div id="toast" class="toast"></div>
+
+  <div class="header">
+    <div class="header-top">
+      <div class="logo-row">
+        <div class="logo-text">
+          <svg width="18" height="18" viewBox="0 0 40 40" fill="none">
+            <polygon points="20,2 36,12 36,28 20,38 4,28 4,12" stroke="currentColor" stroke-width="2.5" fill="rgba(255,255,255,0.06)"/>
+            <circle cx="20" cy="20" r="5" fill="currentColor"/>
+          </svg>
+          NEXUS AI
+        </div>
+        <div class="mode-info">
+          <div class="mode-label" id="modeLabel">هايبر ٣.٥ برو</div>
+          <div class="mode-status" id="modeStatus">جاهز</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="h-btn" id="settingsBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83l-1.41 1.41a2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33H15a2 2 0 01-2-2v-.15a2 2 0 00-2-2h-.15a2 2 0 01-2-2v-1.82a2 2 0 012-2h.15a2 2 0 002-2v-.15a2 2 0 01.33-1.82l.06-.06a2 2 0 012.83 0l1.41 1.41a2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a2 2 0 012 2v.15a2 2 0 002 2h.15a2 2 0 012 2v1.82a2 2 0 01-2 2h-.15a2 2 0 00-2 2v.15a1.65 1.65 0 00-.33 1.82z"/></svg>
+          <span>المفاتيح</span>
+        </button>
+        <button class="h-btn" id="modeBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span>الوضع</span>
+        </button>
+        <button class="h-btn" id="clearBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          <span>مسح</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-wrapper">
+    <div id="chatContainer">
+      <div class="welcome-hyper" id="welcomeMsg">
+        <span class="hyper-logo-anim" id="welcomeIcon">⭐</span>
+        <h2 id="welcomeTitle">هايبر ٣.٥ برو</h2>
+        <p id="welcomeDesc">أقوى الأوضاع — اكتب رسالتك وستحصل على رد مطور ومحسن من هايبر</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="think-level-bar" id="thinkBar">
+      <span class="think-lbl">🧠 عمق:</span>
+      <button class="tbtn" data-lv="simple" onclick="setThink('simple')">بسيط</button>
+      <button class="tbtn tactive" data-lv="medium" onclick="setThink('medium')">متوسط</button>
+      <button class="tbtn" data-lv="strong" onclick="setThink('strong')">قوي</button>
+      <button class="tbtn" data-lv="very_strong" onclick="setThink('very_strong')">قوي جداً</button>
+      <button class="tbtn" data-lv="max" onclick="setThink('max')">⚡ أقصى</button>
+    </div>
+    <div class="input-area">
+    <div id="imgPreview" class="img-preview">
+      <img id="previewImg" src="" alt="">
+      <button class="img-remove" onclick="removeImage()">✕</button>
+    </div>
+    <!-- Media menu popup -->
+    <div class="media-menu" id="mediaMenu">
+        <div class="menu-section-label">📎 رفع ملفات</div>
+        <div class="media-item" onclick="menuUploadImg()">
+          <span class="mi-icon">🖼️</span>
+          <div><div>رفع صورة</div><div class="mi-sub">JPG, PNG, WebP, GIF</div></div>
+        </div>
+        <div class="media-item" onclick="menuUploadVideo()">
+          <span class="mi-icon">🎥</span>
+          <div><div>رفع فيديو</div><div class="mi-sub">MP4, MOV, WebM</div></div>
+        </div>
+        <div class="media-item" onclick="menuUploadFile()">
+          <span class="mi-icon">📄</span>
+          <div><div>رفع ملف</div><div class="mi-sub">PDF, Word, Excel, TXT...</div></div>
+        </div>
+        <div class="menu-divider"></div>
+        <div class="menu-section-label">🤖 توليد بالذكاء الاصطناعي</div>
+        <div class="media-item" id="menuGenImgBtn" onclick="menuGenImg()">
+          <span class="mi-icon">🎨</span>
+          <div><div>توليد صورة</div><div class="mi-sub">DALL-E 3 / Stable Diffusion</div></div>
+        </div>
+        <div class="media-item" id="menuGenVidBtn" onclick="menuGenVideo()">
+          <span class="mi-icon">🎬</span>
+          <div><div>توليد فيديو (5 ثوانٍ)</div><div class="mi-sub">يتطلب مفتاح Replicate</div></div>
+        </div>
+        <div class="menu-divider"></div>
+        <div class="menu-section-label">📍 الموقع</div>
+        <div class="media-item" onclick="menuShareLocation()">
+          <span class="mi-icon">📍</span>
+          <div><div>مشاركة موقعي</div><div class="mi-sub">يطلب إذن الموقع</div></div>
+        </div>
+      </div>
+
+    <!-- Prompt modal -->
+    <div class="gen-modal-overlay" id="genModalOverlay" onclick="closeGenModal(event)">
+      <div class="gen-modal" onclick="event.stopPropagation()">
+        <h3 id="genModalTitle">🎨 صِف ما تريد توليده</h3>
+        <textarea id="genPromptInput" placeholder="مثال: غروب الشمس على البحر بألوان ذهبية..."></textarea>
+        <div class="gen-modal-actions">
+          <button class="gen-modal-cancel" onclick="closeGenModal()">إلغاء</button>
+          <button class="gen-modal-go" id="genModalGoBtn" onclick="startGeneration()">توليد ✨</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-row">
+      <button class="plus-btn" id="plusBtn" title="رفع أو توليد وسائط" onclick="toggleMediaMenu()">＋</button>
+        <div class="input-gradient">
+          <textarea id="msgInput" class="msg-input" placeholder="اكتب رسالتك... هايبر سيرد عليك بأفضل جواب" rows="1"></textarea>
+        </div>
+        <button class="action-btn send-btn" id="sendBtn" title="إرسال">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    <input type="file" id="fileGallery" accept="image/*" style="display:none;">
+      <input type="file" id="fileVideoInput" accept="video/*" style="display:none;">
+      <input type="file" id="fileDocInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.json,.md" style="display:none;">
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const hyperMode = urlParams.get('mode') || 'hyper35pro';
+
+    const MODES = {
+      hyper1:      { label: 'هايبر ١',       icon: '🔥', color: '#c084fc', glow: 'rgba(168,85,247,0.15)',  placeholder: 'اكتب رسالتك... هايبر ١ سيرد', desc: 'الوضع الأساسي — نموذج هايبر الأصلي والقوي' },
+      hyper15:     { label: 'هايبر ١.٥',     icon: '💎', color: '#22d3ee', glow: 'rgba(6,182,212,0.15)',   placeholder: 'اكتب رسالتك... هايبر ١.٥ سيرد', desc: 'أسرع وأذكى — نسخة محسّنة من هايبر' },
+      hyper1pro:   { label: 'هايبر ١ برو',   icon: '👑', color: '#ec4899', glow: 'rgba(236,72,153,0.15)', placeholder: 'اكتب رسالتك... هايبر ١ برو سيرد', desc: '4 نماذج OpenAI + 2 Claude + 2 Llama + 2 Google — أقوى تركيبة!' },
+      hyper15pro:  { label: 'هايبر ١.٥ برو', icon: '✨', color: '#14b8a6', glow: 'rgba(20,184,166,0.15)', placeholder: 'اكتب رسالتك... هايبر ١.٥ برو سيرد', desc: '7 OpenRouter + 4 Claude + 2 Llama + 2 Google — الأسرع والأقوى!' },
+      hyper35pro:  { label: 'هايبر ٣.٥ برو', icon: '⭐', color: '#fbbf24', glow: 'rgba(245,158,11,0.15)', placeholder: 'اكتب رسالتك... هايبر سيرد بأفضل جواب', desc: 'أقوى الأوضاع — اكتب رسالتك وستحصل على رد مطور ومحسن من هايبر' }
+    };
+    const cfg = MODES[hyperMode] || MODES.hyper35pro;
+
+    // تطبيق الألوان
+    document.documentElement.style.setProperty('--hyper-color', cfg.color);
+    document.documentElement.style.setProperty('--hyper-glow', cfg.glow);
+    document.getElementById('modeLabel').textContent = cfg.label;
+    document.getElementById('welcomeTitle').textContent = cfg.label;
+    document.getElementById('welcomeDesc').textContent = cfg.desc;
+    document.getElementById('welcomeIcon').textContent = cfg.icon;
+    document.getElementById('msgInput').placeholder = cfg.placeholder;
+
+    // تاريخ المحادثة
+    let history = [];
+    let pendingImage = null;
+    let isSending = false;
+    const storageKey = `nexus_hyper_${hyperMode}`;
+
+    try { history = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch { history = []; }
+
+    if (history.length > 0) {
+      document.getElementById('welcomeMsg').style.display = 'none';
+      history.forEach(h => {
+        if (h.role === 'user') renderUser(h.content, h.image, false);
+        else if (h.role === 'hyper') renderHyper(h.content, h.source || cfg.label, false);
+      });
+      scrollBottom();
+    }
+
+    function saveHistory() {
+      localStorage.setItem(storageKey, JSON.stringify(history.slice(-40)));
+    }
+
+    function scrollBottom() {
+      const c = document.getElementById('chatContainer');
+      setTimeout(() => { c.scrollTop = c.scrollHeight; }, 50);
+    }
+
+    function renderUser(text, img, scroll = true) {
+      document.getElementById('welcomeMsg').style.display = 'none';
+      const c = document.getElementById('chatContainer');
+      const div = document.createElement('div');
+      div.className = 'chat-turn user-turn';
+      const time = new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
+      div.innerHTML = `<div class="user-bubble">${marked.parse(text)}${img ? `<img src="${img}" class="msg-img">` : ''}<div class="msg-time">${time}</div></div>`;
+      c.appendChild(div);
+      if (scroll) scrollBottom();
+    }
+
+    function renderHyper(text, source, scroll = true) {
+      const c = document.getElementById('chatContainer');
+      const div = document.createElement('div');
+      div.className = 'chat-turn hyper-turn';
+      const time = new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
+      div.innerHTML = `
+        <div class="hyper-response-card">
+          <div class="hyper-card-header">
+            <div class="hyper-name-badge">
+              <div class="hyper-dot"></div>
+              ${cfg.icon} ${source || cfg.label}
+            </div>
+          </div>
+          <div class="hyper-card-body">${marked.parse(text)}</div>
+          <div class="hyper-card-footer">
+            <button class="copy-reply-btn" onclick="copyText(this,'${encodeURIComponent(text)}')">نسخ</button>
+            <span class="reply-time">${time}</span>
+          </div>
+        </div>`;
+      c.appendChild(div);
+      // كود highlighting
+      div.querySelectorAll('pre code').forEach(block => {
+        const btn = document.createElement('button');
+        btn.style.cssText = 'position:absolute;top:6px;left:6px;background:rgba(255,255,255,0.08);border:none;color:#ccc;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;';
+        btn.textContent = 'نسخ';
+        btn.onclick = () => { navigator.clipboard.writeText(block.innerText); btn.textContent = 'تم!'; setTimeout(() => { btn.textContent = 'نسخ'; }, 2000); };
+        block.parentElement.style.position = 'relative';
+        block.parentElement.appendChild(btn);
+        if (window.hljs) hljs.highlightElement(block);
+      });
+      if (scroll) scrollBottom();
+    }
+
+    const THINKING_PHASES = [
+      '🧠 يفكر...',
+      '🧠 يحلل السؤال...',
+      '🧠 يجمع المعلومات...',
+      '🧠 يبحث في العمق...',
+      '🧠 يراجع النماذج...',
+      '🧠 يكشف الأخطاء...',
+      '🧠 يصحّح ويحسّن...',
+      '🧠 يصيغ الرد النهائي...'
+    ];
+
+    function showLoading() {
+      const c = document.getElementById('chatContainer');
+      document.getElementById('welcomeMsg').style.display = 'none';
+      const div = document.createElement('div');
+      div.id = 'loadingMsg';
+      div.className = 'chat-turn';
+      div.style.display = 'flex'; div.style.justifyContent = 'flex-end';
+      div.innerHTML = `
+        <div class="hyper-loading-card">
+          <div class="typing-dots"><span></span><span></span><span></span></div>
+          <div class="loading-text"><strong>${cfg.icon} ${cfg.label}</strong> <span id="thinkPhase">${THINKING_PHASES[0]}</span></div>
+        </div>`;
+      c.appendChild(div);
+      scrollBottom();
+
+      // دوران مراحل التفكير
+      let phaseIdx = 0;
+      div._phaseTimer = setInterval(() => {
+        phaseIdx = (phaseIdx + 1) % THINKING_PHASES.length;
+        const el = document.getElementById('thinkPhase');
+        if (el) el.textContent = THINKING_PHASES[phaseIdx];
+      }, 1800);
+
+      return div;
+    }
+
+    function removeLoading() {
+      const el = document.getElementById('loadingMsg');
+      if (el) { clearInterval(el._phaseTimer); el.remove(); }
+    }
+
+    async function sendMessage() {
+      if (isSending) return;
+      const input = document.getElementById('msgInput');
+      let text = input.value.trim();
+        // سياق الملف المرفوع
+        if (window._uploadedFileContent) {
+          text = (text ? text + '\n\n' : '') + '[محتوى الملف: ' + (window._uploadedFileName||'') + ']\n' + window._uploadedFileContent;
+          window._uploadedFileContent = null; window._uploadedFileName = null;
+        } else if (window._uploadedFileName) {
+          text = (text ? text + ' ' : '') + '[ملف مرفق: ' + window._uploadedFileName + ']';
+          window._uploadedFileName = null; window._uploadedFileType = null;
+        }
+        // موقع المستخدم
+        if (window._userLocation) {
+          const _loc = window._userLocation;
+          text = (text ? text + '\n' : '') + '[موقع المستخدم: ' + _loc.lat + ', ' + _loc.lon + ' ±' + _loc.acc + 'م]';
+          window._userLocation = null;
+        }
+        if (!text && !pendingImage) return;
+
+        const img = pendingImage;
+      removeImage();
+      input.value = '';
+      adjustHeight();
+
+      isSending = true;
+      document.getElementById('sendBtn').disabled = true;
+      document.getElementById('modeStatus').textContent = 'يعمل خلف الكواليس...';
+
+      renderUser(text, img);
+      history.push({ role: 'user', content: text, image: img });
+      saveHistory();
+
+      const loadingEl = showLoading();
+
+      try {
+        const apiKeys = JSON.parse(localStorage.getItem('nexus_dev_ai_keys') || '{}');
+
+        const resp = await fetch('/api/hyper-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+            imageBase64: img,
+            history: history.slice(-12).filter(h => h.role === 'user').map(h => ({ role: 'user', content: h.content })),
+            apiKeys,
+            hyperMode,
+            thinkLevel: window._thinkLevel || 'medium'
+          })
+        });
+
+        const data = await resp.json();
+        removeLoading();
+
+        if (!resp.ok || data.error) throw new Error(data.error || 'خطأ في الخادم');
+
+        const source = data.source || cfg.label;
+        renderHyper(data.reply, source);
+        history.push({ role: 'hyper', content: data.reply, source });
+        saveHistory();
+        document.getElementById('modeStatus').textContent = 'جاهز';
+
+      } catch (err) {
+        removeLoading();
+        renderHyper(`⚠️ خطأ: ${err.message}\n\nتأكد من إضافة مفاتيح API في الإعدادات.`, cfg.label);
+        document.getElementById('modeStatus').textContent = 'خطأ';
+      }
+
+      isSending = false;
+      document.getElementById('sendBtn').disabled = false;
+    }
+
+    window.copyText = function(btn, encoded) {
+      const text = decodeURIComponent(encoded);
+      navigator.clipboard.writeText(text).catch(() => {});
+      btn.textContent = 'تم!';
+      btn.style.color = '#00e676';
+      setTimeout(() => { btn.textContent = 'نسخ'; btn.style.color = ''; }, 2000);
+    };
+
+    window.removeImage = function() {
+      pendingImage = null;
+      document.getElementById('imgPreview').style.display = 'none';
+      document.getElementById('fileGallery').value = '';
+    };
+
+    document.getElementById('fileGallery').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const scale = Math.min(800 / img.width, 800 / img.height, 1);
+          canvas.width = img.width * scale; canvas.height = img.height * scale;
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          const b64 = canvas.toDataURL('image/jpeg', 0.75);
+          pendingImage = b64;
+          document.getElementById('previewImg').src = b64;
+          document.getElementById('imgPreview').style.display = 'block';
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function adjustHeight() {
+      const el = document.getElementById('msgInput');
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+    }
+
+    document.getElementById('msgInput').addEventListener('input', adjustHeight);
+    document.getElementById('msgInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+    document.getElementById('sendBtn').addEventListener('click', sendMessage);
+    document.getElementById('settingsBtn').addEventListener('click', () => window.location.href = '/settings.html');
+    document.getElementById('modeBtn').addEventListener('click', () => window.location.href = '/mode.html');
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      if (confirm('مسح المحادثة كاملاً؟')) {
+        history = [];
+        localStorage.removeItem(storageKey);
+        document.getElementById('chatContainer').querySelectorAll('.chat-turn').forEach(el => el.remove());
+        document.getElementById('welcomeMsg').style.display = 'block';
+        showToast('تم مسح المحادثة');
+      }
+    });
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.style.display = 'block';
+      clearTimeout(t._t);
+      t._t = setTimeout(() => { t.style.display = 'none'; }, 3000);
+    }
+
+    // Animated background
+    const canvas = document.getElementById('bg');
+    const ctx = canvas.getContext('2d');
+    const particles = [];
+    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    resize(); window.addEventListener('resize', resize);
+    let r, g, b;
+    switch(hyperMode) {
+      case 'hyper1': [r, g, b] = [168, 85, 247]; break;
+      case 'hyper1pro': [r, g, b] = [236, 72, 153]; break;
+      case 'hyper15': [r, g, b] = [6, 182, 212]; break;
+      case 'hyper15pro': [r, g, b] = [20, 184, 166]; break;
+      default: [r, g, b] = [245, 158, 11];
+    }
+    for (let i = 0; i < 80; i++) {
+      particles.push({ x: Math.random()*innerWidth, y: Math.random()*innerHeight, r: Math.random()*1.4+0.3, a: Math.random(), s: (Math.random()*0.005+0.002)*(Math.random()>0.5?1:-1) });
+    }
+    (function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.a += p.s; if (p.a > 1 || p.a < 0) p.s *= -1;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(${r},${g},${b},${p.a*0.4})`; ctx.fill();
+      });
+      requestAnimationFrame(draw);
+    })();
+  
+      // ===== Thinking Level =====
+      let _thinkLevel = localStorage.getItem('nexus_think_level') || 'medium';
+      window._thinkLevel = _thinkLevel;
+
+      function setThink(lv) {
+        _thinkLevel = lv;
+        window._thinkLevel = lv;
+        localStorage.setItem('nexus_think_level', lv);
+        document.querySelectorAll('.tbtn').forEach(b => {
+          b.classList.toggle('tactive', b.dataset.lv === lv);
+        });
+      }
+
+      // Init think level buttons
+      (function() {
+        const saved = localStorage.getItem('nexus_think_level') || 'medium';
+        _thinkLevel = saved; window._thinkLevel = saved;
+        document.querySelectorAll('.tbtn').forEach(b => {
+          b.classList.toggle('tactive', b.dataset.lv === saved);
+        });
+        // Show/hide think bar only for hyper35pro
+        const bar = document.getElementById('thinkBar');
+        if (bar && !['hyper35pro','hyper1pro','hyper15pro'].includes(hyperMode)) bar.style.display = 'none';
+      })();
+
+      // Thinking badge: show when sending, hide when done
+      const _origSend = sendMessage;
+      const _sendBtn2 = document.getElementById('sendBtn');
+      const _badge = document.getElementById('thinkingBadge');
+
+      function showThinkingBadge() {
+        if (_badge && ['hyper35pro','hyper1pro','hyper15pro'].includes(hyperMode)) _badge.classList.add('visible');
+      }
+      function hideThinkingBadge() {
+        if (_badge) _badge.classList.remove('visible');
+      }
+
+      // Wrap sendMessage to show/hide badge
+      document.getElementById('sendBtn').addEventListener('click', showThinkingBadge);
+      document.getElementById('msgInput').addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') showThinkingBadge();
+      });
+
+      // Override the removeLoading to also hide badge
+      const _origRemoveLoading = removeLoading;
+      window.removeLoading = function() {
+        _origRemoveLoading();
+        hideThinkingBadge();
+      };
+
+  
+  
+      // ==========================================
+      // MEDIA MENU — زر + والتوليد
+      // ==========================================
+      let _genType = 'image';
+
+      function toggleMediaMenu() {
+        const menu = document.getElementById('mediaMenu');
+        if (!menu) return;
+        menu.classList.toggle('open');
+        const isAI = ['deep','speed','hyper35pro'].includes(hyperMode);
+        const vidBtn = document.getElementById('menuGenVidBtn');
+        const imgGenBtn = document.getElementById('menuGenImgBtn');
+        if (vidBtn) vidBtn.style.display = isAI ? 'flex' : 'none';
+        if (imgGenBtn) imgGenBtn.style.display = isAI ? 'flex' : 'none';
+      }
+
+      function menuUploadImg() {
+        closeMediaMenu();
+        document.getElementById('fileGallery')?.click();
+      }
+
+      function menuUploadVideo() {
+        closeMediaMenu();
+        const input = document.getElementById('fileVideoInput');
+        if (!input) return;
+        input.onchange = function(e) {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+          const url = URL.createObjectURL(file);
+          addUserMessage('🎥 تم رفع فيديو: ' + file.name);
+          addBotMessageRaw(`<div class="file-preview-card">
+            <span class="fp-icon">🎥</span>
+            <div>
+              <div class="fp-name">${file.name}</div>
+              <div class="fp-size">${sizeMB} MB</div>
+            </div>
+          </div>
+          <video class="uploaded-video" controls><source src="${url}" type="${file.type}"></video>`);
+          // Add note to next message
+          window._uploadedFileName = file.name;
+          window._uploadedFileType = 'video';
+          showToast('✅ تم رفع الفيديو — اكتب سؤالك عنه', 'success');
+          input.value = '';
+        };
+        input.click();
+      }
+
+      function menuUploadFile() {
+        closeMediaMenu();
+        const input = document.getElementById('fileDocInput');
+        if (!input) return;
+        input.onchange = function(e) {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+          const ext = file.name.split('.').pop().toUpperCase();
+          const icons = { PDF:'📑', DOC:'📝', DOCX:'📝', XLS:'📊', XLSX:'📊', PPT:'📋', PPTX:'📋', TXT:'📄', CSV:'📊', JSON:'📋', MD:'📄' };
+          const icon = icons[ext] || '📎';
+          addUserMessage(`${icon} تم رفع ملف: ${file.name}`);
+
+          // Read text files to send to AI
+          if (['txt','md','csv','json'].includes(ext.toLowerCase())) {
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+              const content = ev.target.result.slice(0, 8000); // max 8k chars
+              window._uploadedFileContent = content;
+              window._uploadedFileName = file.name;
+              window._uploadedFileType = 'text';
+              addBotMessageRaw(`<div class="file-preview-card">
+                <span class="fp-icon">${icon}</span>
+                <div><div class="fp-name">${file.name}</div>
+                <div class="fp-size">${sizeMB} MB — تم تحميله، اكتب سؤالك</div></div>
+              </div>`);
+              showToast('✅ الملف جاهز — اكتب سؤالك', 'success');
+            };
+            reader.readAsText(file, 'UTF-8');
+          } else {
+            window._uploadedFileName = file.name;
+            window._uploadedFileType = 'doc';
+            addBotMessageRaw(`<div class="file-preview-card">
+              <span class="fp-icon">${icon}</span>
+              <div><div class="fp-name">${file.name}</div>
+              <div class="fp-size">${sizeMB} MB</div></div>
+            </div>`);
+            showToast('✅ تم رفع الملف', 'success');
+          }
+          input.value = '';
+        };
+        input.click();
+      }
+
+      function menuShareLocation() {
+        closeMediaMenu();
+        if (!navigator.geolocation) {
+          showToast('الموقع الجغرافي غير مدعوم في هذا المتصفح', 'error');
+          return;
+        }
+        showToast('⏳ جارٍ طلب إذن الموقع...', 'success');
+        navigator.geolocation.getCurrentPosition(
+          function(pos) {
+            const lat = pos.coords.latitude.toFixed(6);
+            const lon = pos.coords.longitude.toFixed(6);
+            const acc = Math.round(pos.coords.accuracy);
+            const mapsUrl = `https://maps.google.com/?q=${lat},${lon}`;
+            // Store for next message
+            window._userLocation = { lat, lon, acc };
+            addUserMessage('📍 مشاركة الموقع');
+            addBotMessageRaw(`<div class="location-card" onclick="window.open('${mapsUrl}','_blank')">
+              <span class="lc-icon">📍</span>
+              <div>
+                <div class="lc-text">خط العرض: ${lat} | خط الطول: ${lon}</div>
+                <div class="lc-sub">الدقة: ±${acc}م — انقر لفتح الخريطة</div>
+              </div>
+            </div>`);
+            showToast('✅ تم مشاركة الموقع مع الذكاء الاصطناعي', 'success');
+          },
+          function(err) {
+            const msgs = {
+              1: 'رفضت مشاركة الموقع — يمكنك السماح لاحقاً من إعدادات المتصفح',
+              2: 'تعذّر الحصول على الموقع',
+              3: 'انتهت مهلة طلب الموقع'
+            };
+            showToast('⚠️ ' + (msgs[err.code] || 'خطأ في الموقع'), 'error');
+          },
+          { timeout: 10000, enableHighAccuracy: true }
+        );
+      }
+
+      function menuGenImg() {
+        closeMediaMenu();
+        _genType = 'image';
+        const title = document.getElementById('genModalTitle');
+        const goBtn = document.getElementById('genModalGoBtn');
+        if (title) title.textContent = '🎨 صِف الصورة التي تريد توليدها';
+        if (goBtn) goBtn.textContent = '🎨 توليد صورة';
+        document.getElementById('genPromptInput').value = '';
+        document.getElementById('genModalOverlay').classList.add('open');
+        document.getElementById('genPromptInput').focus();
+      }
+
+      function menuGenVideo() {
+        closeMediaMenu();
+        _genType = 'video';
+        const title = document.getElementById('genModalTitle');
+        const goBtn = document.getElementById('genModalGoBtn');
+        if (title) title.textContent = '🎬 صِف الفيديو القصير (5 ثوانٍ)';
+        if (goBtn) goBtn.textContent = '🎬 توليد فيديو';
+        document.getElementById('genPromptInput').value = '';
+        document.getElementById('genModalOverlay').classList.add('open');
+        document.getElementById('genPromptInput').focus();
+      }
+
+      function closeMediaMenu() {
+        document.getElementById('mediaMenu')?.classList.remove('open');
+      }
+
+      function closeGenModal(e) {
+        if (e && e.target !== document.getElementById('genModalOverlay')) return;
+        document.getElementById('genModalOverlay').classList.remove('open');
+      }
+
+      // Close menu on outside click
+      document.addEventListener('click', function(e) {
+        const menu = document.getElementById('mediaMenu');
+        const plusBtn = document.getElementById('plusBtn');
+        if (menu && !menu.contains(e.target) && e.target !== plusBtn) {
+          menu.classList.remove('open');
+        }
+      });
+
+      async function startGeneration() {
+        const prompt = (document.getElementById('genPromptInput')?.value || '').trim();
+        if (!prompt) { showToast('اكتب وصفاً أولاً', 'error'); return; }
+
+        document.getElementById('genModalOverlay').classList.remove('open');
+
+        // إضافة رسالة المستخدم
+        const userMsg = _genType === 'image'
+          ? '🎨 توليد صورة: ' + prompt
+          : '🎬 توليد فيديو: ' + prompt;
+        addUserMessage(userMsg);
+
+        // إضافة مؤشر التحميل
+        const loadId = 'gen-load-' + Date.now();
+        const loadHTML = `<div class="gen-loading" id="${loadId}">
+          <span class="gl-spin">${_genType === 'image' ? '🎨' : '🎬'}</span>
+          <span>${_genType === 'image' ? 'جارٍ توليد الصورة...' : 'جارٍ توليد الفيديو (قد يستغرق 30-60 ثانية)...'}</span>
+        </div>`;
+        addBotMessageRaw(loadHTML);
+
+        try {
+          const apiKeys = JSON.parse(localStorage.getItem('nexus_dev_ai_keys') || '{}');
+          const r = await fetch('/api/generate-media', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: _genType, prompt, apiKeys, mode: hyperMode })
+          });
+          const data = await r.json();
+
+          // إزالة مؤشر التحميل
+          document.getElementById(loadId)?.remove();
+
+          if (!r.ok || data.error) {
+            addBotMessageRaw(`<div style="color:#ff6b6b;padding:12px;background:rgba(255,59,59,0.08);border-radius:10px;border:1px solid rgba(255,59,59,0.2)">❌ ${data.error || 'خطأ في التوليد'}</div>`);
+            return;
+          }
+
+          if (data.type === 'image' && data.url) {
+            const imgHTML = `<div class="gen-media-wrap">
+              <div style="font-size:11px;color:#666;margin-bottom:6px">🎨 تم التوليد بـ ${data.model || 'الذكاء الاصطناعي'}</div>
+              <img class="gen-img" src="${data.url}" alt="صورة مولّدة" onclick="window.open('${data.url}', '_blank')" title="انقر للعرض بالحجم الكامل">
+            </div>`;
+            addBotMessageRaw(imgHTML);
+          }
+
+          if (data.type === 'video' && data.url) {
+            const vidHTML = `<div class="gen-media-wrap">
+              <div style="font-size:11px;color:#666;margin-bottom:6px">🎬 تم التوليد بـ ${data.model || 'الذكاء الاصطناعي'}</div>
+              <video class="gen-video" controls autoplay muted loop>
+                <source src="${data.url}">
+              </video>
+            </div>`;
+            addBotMessageRaw(vidHTML);
+          }
+
+        } catch (err) {
+          document.getElementById(loadId)?.remove();
+          addBotMessageRaw(`<div style="color:#ff6b6b;padding:12px;background:rgba(255,59,59,0.08);border-radius:10px">❌ خطأ في الاتصال</div>`);
+        }
+      }
+
+      // Helper: add user message bubble
+      function addUserMessage(text) {
+        const container = document.getElementById('chatContainer');
+        const welcome = document.getElementById('welcomeMsg');
+        if (welcome) welcome.style.display = 'none';
+        const div = document.createElement('div');
+        div.className = 'msg-wrap user';
+        div.innerHTML = `<div class="msg-bubble user-bubble"><div class="msg-text">${text}</div></div>`;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+      }
+
+      // Helper: add bot raw HTML bubble
+      function addBotMessageRaw(html) {
+        const container = document.getElementById('chatContainer');
+        const div = document.createElement('div');
+        div.className = 'msg-wrap bot';
+        div.innerHTML = `<div class="msg-bubble bot-bubble">${html}</div>`;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+      }
+
+  
+  </script>
+</body>
+</html>
