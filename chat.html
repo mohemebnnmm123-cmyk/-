@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Nexus AI PRO - محادثة</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --safe-bottom: env(safe-area-inset-bottom, 10px);
+      --bg: #010108;
+      --surface: rgba(8, 10, 22, 0.9);
+      --primary: #00d4ff;
+      --orange: #ff6b35;
+      --border: rgba(0, 212, 255, 0.15);
+      --text: #e8f4f8;
+      --text-muted: #7a9aaa;
+    }
+    html, body { width: 100vw; height: 100dvh; background: var(--bg); color: var(--text); font-family: 'Cairo', sans-serif; overflow: hidden; display: flex; flex-direction: column; }
+
+    canvas#bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+    /* ---- TOP HEADER ---- */
+    .header {
+      position: relative; z-index: 20;
+      background: rgba(5,6,18,0.95);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 14px;
+      flex-shrink: 0;
+    }
+    .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .logo-text { font-size: 15px; font-weight: 900; color: var(--primary); display: flex; align-items: center; gap: 6px; }
+    .header-actions { display: flex; gap: 8px; }
+    .h-btn { background: rgba(0,212,255,0.06); border: 1px solid var(--border); color: var(--text-muted); padding: 7px 12px; border-radius: 9px; cursor: pointer; font-family: 'Cairo', sans-serif; font-size: 13px; transition: 0.2s; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+    .h-btn:hover { background: rgba(0,212,255,0.12); color: var(--text); }
+
+    /* mode badge */
+    .mode-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; }
+    .mode-badge.deep { background: rgba(255,107,53,0.12); color: #ff8c5a; border: 1px solid rgba(255,107,53,0.25); }
+    .mode-badge.speed { background: rgba(0,212,255,0.1); color: #00d4ff; border: 1px solid rgba(0,212,255,0.25); }
+
+    /* company tabs */
+    .company-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+    .company-tabs::-webkit-scrollbar { display: none; }
+    .co-tab { background: rgba(20,22,35,0.8); color: #7a9aaa; padding: 6px 14px; border-radius: 16px; border: 1px solid transparent; cursor: pointer; font-weight: 700; font-size: 12px; font-family: 'Cairo', sans-serif; transition: all 0.25s; white-space: nowrap; }
+    .co-tab.active { color: #fff; background: rgba(0,20,35,0.9); border-color: var(--primary); box-shadow: 0 0 15px rgba(0,212,255,0.25); }
+    .co-tab:hover:not(.active) { color: #ccc; background: rgba(25,28,42,0.8); }
+
+    /* model chips */
+    .models-row { display: flex; gap: 7px; overflow-x: auto; padding: 8px 0 2px; }
+    .models-row::-webkit-scrollbar { display: none; }
+    .model-chip { background: rgba(25,28,40,0.85); color: #7a9aaa; padding: 5px 13px; border-radius: 12px; border: 1px solid #333; font-size: 12px; cursor: pointer; white-space: nowrap; transition: 0.25s; font-family: 'Cairo', sans-serif; }
+    .model-chip.active { color: #fff; border-color: #ff3cf7; box-shadow: 0 0 12px rgba(255,60,247,0.35); background: rgba(40,0,40,0.9); }
+    .model-chip:hover:not(.active) { color: #ddd; border-color: #555; }
+
+    /* daily counter */
+    .daily-counter { display: flex; gap: 10px; overflow-x: auto; padding: 6px 0 0; }
+    .daily-counter::-webkit-scrollbar { display: none; }
+    .counter-badge { display: flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 8px; font-size: 11px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.07); color: var(--text-muted); white-space: nowrap; }
+    .counter-val { font-weight: 700; color: var(--primary); }
+
+    /* ---- CHAT AREA ---- */
+    .chat-wrapper { flex: 1; overflow: hidden; display: flex; flex-direction: column; position: relative; z-index: 5; }
+    .chat-container { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth; }
+    .chat-container::-webkit-scrollbar { width: 4px; }
+    .chat-container::-webkit-scrollbar-track { background: transparent; }
+    .chat-container::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.2); border-radius: 4px; }
+
+    .message { max-width: 88%; padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.75; word-wrap: break-word; animation: msgIn 0.3s ease-out; position: relative; }
+    @keyframes msgIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    .message.user { align-self: flex-start; background: linear-gradient(135deg, rgba(40,25,5,0.95), rgba(25,12,0,0.9)); border: 1px solid rgba(255,165,0,0.35); border-radius: 16px 16px 4px 16px; box-shadow: 0 0 15px rgba(255,140,0,0.12); }
+    .message.ai { align-self: flex-end; background: linear-gradient(135deg, rgba(0,18,35,0.95), rgba(0,10,22,0.9)); border: 1px solid rgba(0,212,255,0.25); border-radius: 16px 16px 16px 4px; box-shadow: 0 0 18px rgba(0,212,255,0.1); }
+    .msg-meta { font-size: 10px; color: #3a5060; margin-top: 6px; text-align: left; }
+    .message img { max-width: 100%; border-radius: 10px; margin-top: 8px; border: 1px solid #333; }
+
+    pre { position: relative; background: #0d1117 !important; padding: 14px; border-radius: 10px; border: 1px solid #30363d; overflow-x: auto; margin: 8px 0; }
+    code { font-family: 'Courier New', monospace; font-size: 13px; }
+    p code { background: rgba(255,255,255,0.07); padding: 2px 6px; border-radius: 4px; }
+    .copy-code-btn { position: absolute; top: 6px; left: 6px; background: rgba(255,255,255,0.08); border: none; color: #ccc; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; transition: 0.2s; }
+    .copy-code-btn:hover { background: rgba(255,255,255,0.18); }
+
+    /* typing */
+    .typing-indicator { color: var(--primary); text-align: center; font-size: 13px; padding: 6px; display: none; font-weight: 600; animation: glow 1.5s infinite alternate; }
+    @keyframes glow { from { text-shadow: 0 0 5px var(--primary); } to { text-shadow: 0 0 20px var(--primary), 0 0 30px rgba(0,212,255,0.4); } }
+    .typing-cursor { animation: blink 0.8s infinite; }
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+    /* edge glow */
+    .edge-glow { position: fixed; inset: 0; pointer-events: none; z-index: 4; transition: opacity 0.4s; animation: edgeBreath 5s infinite alternate; }
+    .edge-glow.active { box-shadow: inset 0 0 80px 30px rgba(0,212,255,0.4), inset 0 0 40px 15px rgba(255,0,200,0.3) !important; animation: edgePulse 0.5s infinite alternate !important; }
+    @keyframes edgeBreath { 0% { box-shadow: inset 0 0 25px 4px rgba(255,0,80,0.2), inset 0 0 12px 2px rgba(0,212,255,0.15); } 50% { box-shadow: inset 0 0 40px 10px rgba(120,40,180,0.3), inset 0 0 25px 7px rgba(0,200,130,0.2); } 100% { box-shadow: inset 0 0 30px 8px rgba(0,212,255,0.25), inset 0 0 15px 4px rgba(255,140,0,0.15); } }
+    @keyframes edgePulse { 0% { opacity: 0.7; } 100% { opacity: 1; } }
+
+    /* ---- INPUT ---- */
+    .input-area {
+      padding: 10px 12px;
+      padding-bottom: calc(10px + var(--safe-bottom));
+      background: rgba(4,5,16,0.98);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+      position: relative;
+      z-index: 20;
+    }
+
+    .img-preview { display: none; padding: 5px; background: #0d0f1e; border-radius: 10px; margin-bottom: 8px; position: relative; width: fit-content; border: 1px solid var(--primary); }
+    .img-preview img { height: 56px; border-radius: 7px; }
+    .img-remove { position: absolute; top: -8px; right: -8px; background: #ff1744; color: #fff; border: 2px solid #fff; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+
+    .input-row { display: flex; align-items: flex-end; gap: 8px; }
+    .input-gradient { flex: 1; padding: 2px; border-radius: 18px; background: linear-gradient(45deg, #ff003c, #00d4ff, #3a7bd5, #ff00ff); background-size: 400%; animation: gradMove 7s infinite linear; }
+    .input-gradient:focus-within { box-shadow: 0 0 20px rgba(0,212,255,0.35); }
+    @keyframes gradMove { 0% { background-position: 0 0; } 100% { background-position: 100% 0; } }
+    .msg-input { width: 100%; background: #070912; color: #fff; padding: 12px 16px; border-radius: 16px; border: none; outline: none; font-size: 14px; font-family: 'Cairo', sans-serif; resize: none; overflow: hidden; min-height: 44px; max-height: 160px; line-height: 1.5; }
+
+    .action-btn { background: #0d0f20; color: #ccc; border: 1px solid #333; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; font-size: 18px; transition: 0.2s; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .action-btn:hover { background: #14162a; transform: scale(1.08); }
+    .send-btn { background: linear-gradient(135deg, #003a00, #008000); border-color: #00c800; box-shadow: 0 0 12px rgba(0,200,0,0.3); }
+    .send-btn:hover { box-shadow: 0 0 22px rgba(0,255,0,0.5); }
+    .mic-btn { background: #1a002e; border-color: #9b00ff; color: #cc88ff; }
+    .mic-btn.recording { background: #cc0000; color: #fff; animation: micRec 1s infinite; border-color: #ff0000; box-shadow: 0 0 18px rgba(255,0,0,0.5); }
+    @keyframes micRec { 0%,100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+
+    /* attach menu */
+    .attach-menu { position: absolute; bottom: 70px; right: 12px; background: rgba(6,8,20,0.97); backdrop-filter: blur(20px); border: 1px solid var(--primary); border-radius: 14px; display: none; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(0,212,255,0.1); z-index: 100; min-width: 200px; }
+    .attach-menu button { background: none; border: none; color: #ddd; padding: 13px 18px; text-align: right; cursor: pointer; font-size: 14px; font-family: 'Cairo', sans-serif; border-bottom: 1px solid rgba(255,255,255,0.05); transition: 0.2s; display: flex; align-items: center; gap: 10px; }
+    .attach-menu button:hover { background: rgba(0,212,255,0.1); color: #fff; }
+    .attach-menu button:last-child { border-bottom: none; }
+    .attach-menu button.danger { color: #ff6060; }
+    .attach-menu button.danger:hover { background: rgba(255,60,60,0.1); }
+
+    /* toast */
+    .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.92); border: 1px solid var(--primary); color: var(--primary); padding: 10px 20px; border-radius: 16px; display: none; font-size: 13px; font-weight: 600; z-index: 999; animation: toastIn 0.3s ease; }
+    @keyframes toastIn { from { top: -40px; opacity: 0; } to { top: 20px; opacity: 1; } }
+
+    /* welcome */
+    .welcome { text-align: center; padding: 40px 20px; animation: fadeIn 0.5s ease; color: var(--text-muted); }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .welcome h2 { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 10px; }
+    .welcome p { font-size: 14px; line-height: 1.8; margin-bottom: 24px; }
+    .quick-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+    .qa-btn { background: rgba(0,212,255,0.06); border: 1px solid rgba(0,212,255,0.2); color: var(--text-muted); padding: 8px 14px; border-radius: 10px; cursor: pointer; font-size: 12px; font-family: 'Cairo', sans-serif; transition: 0.2s; }
+    .qa-btn:hover { background: rgba(0,212,255,0.12); color: var(--text); }
+
+    @media (max-width: 480px) {
+      .header-actions .h-btn span { display: none; }
+      .message { max-width: 95%; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bg"></canvas>
+  <div class="edge-glow" id="edgeGlow"></div>
+  <div id="toast" class="toast"></div>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-top">
+      <div class="logo-text">
+        <svg width="18" height="18" viewBox="0 0 40 40" fill="none"><polygon points="20,2 36,12 36,28 20,38 4,28 4,12" stroke="#00d4ff" stroke-width="2.5" fill="rgba(0,212,255,0.08)"/><circle cx="20" cy="20" r="5" fill="#00d4ff"/></svg>
+        NEXUS AI
+        <span class="mode-badge" id="modeBadge">-</span>
+      </div>
+      <div class="header-actions">
+        <button class="h-btn" id="settingsBtn" title="المفاتيح">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          <span>المفاتيح</span>
+        </button>
+        <button class="h-btn" id="modeBtn" title="تغيير الوضع">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+          <span>الوضع</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="company-tabs" id="companyTabs">
+      <button class="co-tab active" data-co="google">Google</button>
+      <button class="co-tab" data-co="openrouter">OpenRouter</button>
+      <button class="co-tab" data-co="groq">Groq</button>
+    </div>
+
+    <div class="models-row" id="modelsRow"></div>
+
+    <div class="daily-counter" id="dailyCounter"></div>
+  </div>
+
+  <!-- Chat -->
+  <div class="chat-wrapper">
+    <div class="chat-container" id="chatContainer">
+      <div class="welcome" id="welcomeMsg">
+        <h2>مرحبا في Nexus AI PRO</h2>
+        <p>اختر نموذجا وابدأ المحادثة. يمكنك رفع صور، استخدام الصوت، أو توليد صور وفيديو.</p>
+        <div class="quick-actions">
+          <button class="qa-btn" onclick="insertPrompt('اشرح لي كيف يعمل الذكاء الاصطناعي')">ما هو الذكاء الاصطناعي؟</button>
+          <button class="qa-btn" onclick="insertPrompt('اكتب لي كود Python بسيط')">كود Python</button>
+          <button class="qa-btn" onclick="insertPrompt('/image غروب الشمس على البحر')">توليد صورة</button>
+          <button class="qa-btn" onclick="insertPrompt('ترجم هذه الجملة للإنجليزية: ')">ترجمة</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="typingIndicator" class="typing-indicator">الذكاء الاصطناعي يفكر... <span class="typing-cursor">|</span></div>
+
+  <!-- Input -->
+  <div class="input-area">
+    <div id="imgPreview" class="img-preview">
+      <img id="previewImg" src="" alt="">
+      <button class="img-remove" onclick="removeImage()">✕</button>
+    </div>
+    <div class="input-row">
+      <button class="action-btn" id="attachBtn" title="إرفاق">➕</button>
+      <button class="action-btn mic-btn" id="micBtn" title="تحدث">🎤</button>
+      <div class="input-gradient">
+        <textarea id="msgInput" class="msg-input" placeholder="اكتب رسالتك... أو استخدم /image /video" rows="1"></textarea>
+      </div>
+      <button class="action-btn send-btn" id="sendBtn" title="إرسال">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+
+    <div id="attachMenu" class="attach-menu">
+      <button onclick="triggerCamera()">📷 التقاط صورة</button>
+      <button onclick="triggerGallery()">🖼️ رفع صورة</button>
+      <button onclick="quickPrompt('/image ')">🎨 توليد صورة (DALL-E 3)</button>
+      <button onclick="quickPrompt('/video ')">🎞️ توليد فيديو</button>
+      <button class="danger" onclick="clearChat()">🗑️ مسح المحادثة</button>
+    </div>
+
+    <input type="file" id="fileCamera" accept="image/*" capture="environment" style="display:none;">
+    <input type="file" id="fileGallery" accept="image/*" style="display:none;">
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script type="module" src="/src/chat.js"></script>
+</body>
+</html>
