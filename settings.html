@@ -606,6 +606,28 @@
       </div>
       <div style="font-size:11px;color:#2a4a5a;margin-top:6px">يُحفظ بشكل آمن ويُطبّق على جميع محادثات الموقع</div>
 
+
+      <div class="divider"></div>
+
+      <!-- GitHub Token & Repo -->
+      <div class="chat-section-title">🐙 ربط GitHub — صلاحيات المستودع</div>
+      <div style="font-size:12px;color:#4a7a8a;margin-bottom:12px">يمكّن الذكاء الاصطناعي من قراءة وتعديل وإضافة وحذف ملفات المستودع مباشرةً — خاص بالمطور فقط</div>
+
+      <div style="margin-bottom:10px">
+        <div class="chat-section-title" style="font-size:12px;margin:0 0 6px">🔑 توكن GitHub (Personal Access Token)</div>
+        <div style="display:flex;gap:8px">
+          <input type="password" class="chat-text-input" id="chatGhToken" placeholder="ghp_..." style="flex:1;font-family:monospace">
+          <button class="toggle-btn" onclick="toggleInput('chatGhToken')">👁</button>
+        </div>
+        <div style="font-size:11px;color:#2a4a5a;margin-top:5px">⚠️ احفظ التوكن هنا فقط — لا تشاركه مع أحد</div>
+      </div>
+
+      <div style="margin-bottom:10px">
+        <div class="chat-section-title" style="font-size:12px;margin:0 0 6px">📁 اسم المستودع (owner/repo)</div>
+        <input type="text" class="chat-text-input" id="chatGhRepo" placeholder="مثال: mohemebnnmm123-cmyk/-" value="mohemebnnmm123-cmyk/-">
+        <div style="font-size:11px;color:#2a4a5a;margin-top:5px">الرابط: github.com/{owner}/{repo}</div>
+      </div>
+
       <button class="chat-save-btn" id="chatSaveBtn" onclick="saveChatSettings()">💾 حفظ إعدادات الدردشة</button>
       <div style="font-size:11px;color:#2a4a5a;text-align:center;margin-top:10px">الإعدادات سرية وتُطبّق على جميع المستخدمين فوراً</div>
     </div>
@@ -1133,6 +1155,8 @@
         guidance:      (document.getElementById('chatGuidance')?.value       || '').trim(),
         extraInfo:     (document.getElementById('chatExtraInfo')?.value      || '').trim(),
         groqKey:       (document.getElementById('chatGroqKey')?.value        || '').trim(),
+        ghToken:       (document.getElementById('chatGhToken')?.value         || '').trim(),
+        ghRepo:        (document.getElementById('chatGhRepo')?.value          || 'mohemebnnmm123-cmyk/-').trim(),
         strict: {
           privacy:     document.getElementById('strictPrivacy')?.checked  ?? true,
           safe:        document.getElementById('strictSafe')?.checked     ?? true,
@@ -1144,6 +1168,8 @@
 
       localStorage.setItem('nexus_chat_settings', JSON.stringify(settings));
       if (settings.groqKey) localStorage.setItem('nexus_public_groq', settings.groqKey);
+      if (settings.ghToken) localStorage.setItem('nexus_gh_token', settings.ghToken);
+      localStorage.setItem('nexus_gh_repo', settings.ghRepo || 'mohemebnnmm123-cmyk/-');
 
       try {
         await fetch('/api/dev-save', {
@@ -1169,8 +1195,56 @@
       if (!s) return;
       if (document.getElementById('chatInstructions')) document.getElementById('chatInstructions').value = s.instructions || '';
       if (document.getElementById('chatGuidance'))     document.getElementById('chatGuidance').value     = s.guidance    || '';
-      if (document.getElementById('chatExtraInfo'))    document.getElementById('chatExtraInfo').value    = s.extraInfo   || '';
+      if (document.getElementById('chatExtraInfo'))    document.getElementById('chatExtraInfo').value    = s.extraInfo   || `أنت الذكاء الاصطناعي الخاص بالمطور لموقع Nexus AI PRO. فيما يلي كل شيء عن الموقع:
+
+== معلومات الموقع ==
+- الاسم: Nexus AI PRO
+- الرابط المنشور: https://adbalwhb123-cyber.vercel.app
+- مستودع GitHub: mohemebnnmm123-cmyk/- (الفرع: main)
+- منصة النشر: Vercel (نشر تلقائي عند push إلى main)
+
+== ملفات الموقع ==
+1. index.html — صفحة البداية، تُعيد توجيه تلقائياً إلى mode.html
+2. mode.html — صفحة اختيار وضع الذكاء الاصطناعي (الكلاسيكية + الهايبر)
+   - الأوضاع الكلاسيكية: وضع العمق (Deep) • وضع السرعة (Flash)
+   - أوضاع الهايبر: Hyper 1 • 1.5 • 1 PRO • 1.5 PRO • 3.5 PRO
+3. chat.html — صفحة الدردشة الكلاسيكية
+   - نماذج العمق: Gemini 2.5 Pro • o3 Mini • Claude 4.0
+   - نماذج السرعة: Gemini 2.5 Flash • Groq Llama 3.3 • GPT-4o Mini
+4. hyper.html — صفحة أوضاع الهايبر الخمسة
+   - Hyper 1: 5 نماذج متسلسلة (GPT-4o Mini, GPT-4o, Claude 4.0, Claude 3.0, o3 Mini)
+   - Hyper 1.5: 5 نماذج متسلسلة (GPT-4o ×3, o3 Mini, Claude 3.5 Sonnet)
+   - Hyper 1 PRO: 4 نماذج بالتوازي + محكم Claude 3.5
+   - Hyper 1.5 PRO: 5 نماذج بالتوازي + محكم Claude 3.5
+   - Hyper 3.5 PRO: 5 مراحل + 12 نموذج (الأقوى) — بحث ويب مدمج
+5. settings.html — لوحة إعدادات المطور (محمية بكلمة سر)
+   - مفاتيح API: OpenRouter (5) • Google • ChatGPT • Groq • Together • Replicate
+   - مفاتيح Hyper 3.5 PRO مخصصة (8 مفاتيح)
+   - IP الجوال للدخول التلقائي
+   - ذكاء اصطناعي دفاعي (فحص تلقائي كل 20 دقيقة)
+   - حذف المحادثات تلقائياً بعد 48 ساعة
+   - لوحة إدارة الدردشة: تعليمات + نماذج + أوامر صارمة + توجيهات
+
+== كلمة سر المطور ==
+كلمة السر مشفرة في الكود ومعروفة للمطور فقط — لا تكشفها أبداً
+
+== التقنيات ==
+- HTML/CSS/JavaScript خالص (بدون إطار عمل)
+- مفاتيح API مخزنة في localStorage
+- OpenRouter كبوابة رئيسية للنماذج
+- الألوان: #00d4ff (سماوي) • #ff6b35 (برتقالي) • #010108 (خلفية)
+- الخط: Cairo (Google Fonts)
+
+== صلاحياتك مع GitHub ==
+عندما يطلب المطور عملية على المستودع، نفّذها فوراً باستخدام API GitHub:
+- قراءة ملف: GET /repos/{owner}/{repo}/contents/{path}
+- قائمة الملفات: GET /repos/{owner}/{repo}/contents/
+- تعديل/إنشاء ملف: PUT /repos/{owner}/{repo}/contents/{path}
+- حذف ملف: DELETE /repos/{owner}/{repo}/contents/{path}
+التوكن والمستودع محفوظان في localStorage (nexus_gh_token, nexus_gh_repo)`;
       if (document.getElementById('chatGroqKey'))      document.getElementById('chatGroqKey').value      = s.groqKey     || '';
+      if (document.getElementById('chatGhToken'))       document.getElementById('chatGhToken').value       = s.ghToken     || localStorage.getItem('nexus_gh_token') || '';
+      if (document.getElementById('chatGhRepo'))        document.getElementById('chatGhRepo').value        = s.ghRepo      || localStorage.getItem('nexus_gh_repo') || 'mohemebnnmm123-cmyk/-';
       if (s.strict) {
         ['strictPrivacy','strictSafe','strictKeys','strictIdentity','strictLog'].forEach(id => {
           const el = document.getElementById(id);
