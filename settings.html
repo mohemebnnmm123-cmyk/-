@@ -382,7 +382,7 @@
         <div class="hyper-block" style="border-color:rgba(245,158,11,0.25);">
           <div class="hyper-block-title" style="color:#fbbf24;">
             ⭐ هايبر ٣.٥ برو
-            <span class="mb-sm mb-h35">٥ مراحل — ١٢ نموذج</span>
+            <span class="mb-sm mb-h35">٥ مراحل — ١٥ نموذج</span>
             <span class="hyper-block-sub">الأقوى</span>
           </div>
           <div style="font-size:10px;color:#8a7a60;margin-bottom:6px;">المرحلة ١ — عمال بالتوازي:</div>
@@ -402,6 +402,12 @@
             <div class="mc h35" onclick="goToKey('devH35OR3')">⚡ GPT-4o Mini تحقق <span class="st">H35-3</span></div>
             <div class="mc h35" onclick="goToKey('devH35OR1')">🌙 Kimi-K2 تحقق <span class="st">H35-1</span></div>
             <div class="mc h35" onclick="goToKey('devH35Anthropic')">✅ Claude 4.0 نهائي <span class="st">H35-A</span></div>
+          </div>
+          <div style="font-size:10px;color:#22c55e;margin-top:10px;margin-bottom:6px;font-weight:700;">🆕 نماذج جديدة — ChatGPT 5.5:</div>
+          <div class="model-chips">
+            <div class="mc h35" onclick="goToKey('devH35GPT55')" style="background:rgba(34,197,94,0.12);color:#4ade80;border-color:rgba(34,197,94,0.4);">💬 ChatGPT 5.5 <span class="st">GPT55</span></div>
+            <div class="mc h35" onclick="goToKey('devH35GPT55')" style="background:rgba(34,197,94,0.12);color:#4ade80;border-color:rgba(34,197,94,0.4);">🧠 5.5 Thinking <span class="st">GPT55</span></div>
+            <div class="mc h35" onclick="goToKey('devH35GPT55')" style="background:rgba(34,197,94,0.12);color:#4ade80;border-color:rgba(34,197,94,0.4);">⚡ 5.5 Inst-14 <span class="st">GPT55</span></div>
           </div>
         </div>
 
@@ -483,6 +489,9 @@
             <div class="input-row" style="margin-top:6px"><input type="password" class="key-input" id="devH35Google" placeholder="Google AIza... (Gemini 1.5 + 2.5 Flash)"><button class="toggle-btn" onclick="toggleInput('devH35Google')">👁</button></div>
             <div class="input-row" style="margin-top:6px"><input type="password" class="key-input" id="devH35Anthropic" placeholder="Anthropic/Claude (OpenRouter key)"><button class="toggle-btn" onclick="toggleInput('devH35Anthropic')">👁</button></div>
             <div class="input-row" style="margin-top:6px"><input type="password" class="key-input" id="devH35DeepSeek" placeholder="DeepSeek (OpenRouter key)"><button class="toggle-btn" onclick="toggleInput('devH35DeepSeek')">👁</button></div>
+            <div style="font-size:11px;color:#4ade80;font-weight:700;margin-top:14px;margin-bottom:6px;padding:6px 10px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:8px;">🆕 مفتاح ChatGPT 5.5 (الجديد)</div>
+            <div class="input-row" style="margin-top:4px"><input type="password" class="key-input" id="devH35GPT55" placeholder="sk-proj-... (ChatGPT 5.5 + 5.5 Thinking + 5.5 Inst-14)" style="border-color:rgba(34,197,94,0.35);color:#4ade80;"><button class="toggle-btn" onclick="toggleInput('devH35GPT55')">👁</button></div>
+            <div class="hint" style="color:#4ade80;opacity:0.7;">مفتاح OpenAI لتشغيل: gpt-5.5 • gpt-5.5-thinking • gpt-5.5-instruct-14</div>
           </div>
 
           <button class="save-btn dev-save" id="devSaveBtn" onclick="saveDevKeys()">💾 حفظ مفاتيح المطور</button>
@@ -884,7 +893,8 @@
           devH35OR1: keys.h35_or1, devH35OR2: keys.h35_or2,
           devH35OR3: keys.h35_or3, devH35OR4: keys.h35_or4,
           devH35OpenAI: keys.h35_openai, devH35Google: keys.h35_google,
-          devH35Anthropic: keys.h35_anthropic, devH35DeepSeek: keys.h35_deepseek
+          devH35Anthropic: keys.h35_anthropic, devH35DeepSeek: keys.h35_deepseek,
+          devH35GPT55: keys.h35_gpt55
         };
       Object.entries(map).forEach(([id, val]) => {
         const el = document.getElementById(id);
@@ -934,7 +944,8 @@
           h35_openai:    (document.getElementById('devH35OpenAI')?.value||'').trim(),
           h35_google:    (document.getElementById('devH35Google')?.value||'').trim(),
           h35_anthropic: (document.getElementById('devH35Anthropic')?.value||'').trim(),
-          h35_deepseek:  (document.getElementById('devH35DeepSeek')?.value||'').trim()
+          h35_deepseek:  (document.getElementById('devH35DeepSeek')?.value||'').trim(),
+          h35_gpt55:     (document.getElementById('devH35GPT55')?.value||'').trim()
         };
 
       const count = Object.values(keys).filter(v => v && v.length > 0).length;
@@ -1219,7 +1230,7 @@
    - Hyper 3.5 PRO: 5 مراحل + 12 نموذج (الأقوى) — بحث ويب مدمج
 5. settings.html — لوحة إعدادات المطور (محمية بكلمة سر)
    - مفاتيح API: OpenRouter (5) • Google • ChatGPT • Groq • Together • Replicate
-   - مفاتيح Hyper 3.5 PRO مخصصة (8 مفاتيح)
+   - مفاتيح Hyper 3.5 PRO مخصصة (9 مفاتيح)
    - IP الجوال للدخول التلقائي
    - ذكاء اصطناعي دفاعي (فحص تلقائي كل 20 دقيقة)
    - حذف المحادثات تلقائياً بعد 48 ساعة
